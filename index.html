@@ -19,6 +19,7 @@
     --paralelo: #4f7cff;
     --oficial: #22c55e;
     --diff: #f59e0b;
+    --eur: #c084fc;
     --font: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
@@ -56,73 +57,126 @@
     margin-top: 2px;
   }
 
-  /* TABS */
-  .tabs {
-    display: flex;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 16px;
-  }
+  .content { padding: 20px 16px; }
 
-  .tab {
-    flex: 1;
-    padding: 14px 8px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--muted);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: color 0.15s, border-color 0.15s;
-    user-select: none;
-  }
-
-  .tab.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
-
-  /* PANELS */
-  .panel { display: none; padding: 20px 16px; }
-  .panel.active { display: block; }
-
-  /* SECTION LABEL */
   .section-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
     margin-bottom: 12px;
-    margin-top: 24px;
+    margin-top: 22px;
   }
-
   .section-label:first-child { margin-top: 0; }
 
-  /* INPUT GROUP */
-  .input-group {
+  /* RATES STRIP */
+  .rates-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .rate-chip {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
+    padding: 10px 12px;
   }
 
-  .input-group label {
-    display: block;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+  .rate-chip label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--muted);
     margin-bottom: 6px;
   }
 
-  .input-row {
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot.ok { background: var(--oficial); }
+  .dot.pending { background: var(--warn); animation: pulse 1s infinite ease-in-out; }
+  .dot.manual { background: var(--muted); }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+
+  .rate-chip .rate-input-row {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    align-items: baseline;
+    gap: 4px;
   }
+
+  .rate-chip input[type="number"] {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 17px;
+    font-weight: 700;
+    width: 100%;
+    padding: 0;
+    outline: none;
+  }
+
+  .rate-chip .unit { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+  .rates-meta {
+    grid-column: 1 / -1;
+    font-size: 10.5px;
+    color: var(--muted);
+    line-height: 1.5;
+    padding: 2px 2px 0;
+  }
+  .rates-meta a { color: var(--accent); text-decoration: none; }
+
+  .refresh-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 5px 9px;
+    cursor: pointer;
+  }
+  .refresh-btn:active { background: var(--border); }
+  .refresh-btn:disabled { opacity: 0.5; }
+
+  /* DUAL AMOUNT INPUTS */
+  .dual-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .input-group {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+
+  .input-group.eur { border-color: rgba(192,132,252,0.35); }
+  .input-group.usd { border-color: rgba(34,197,94,0.35); }
+
+  .input-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .input-group.eur label { color: var(--eur); }
+  .input-group.usd label { color: var(--oficial); }
+
+  .input-row { display: flex; align-items: center; gap: 8px; }
 
   .currency-badge {
     background: var(--surface2);
@@ -133,7 +187,7 @@
     font-weight: 700;
     color: var(--muted);
     white-space: nowrap;
-    min-width: 56px;
+    min-width: 44px;
     text-align: center;
   }
 
@@ -143,8 +197,8 @@
     border: 1.5px solid var(--border);
     border-radius: 10px;
     padding: 12px 14px;
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
     color: var(--text);
     width: 100%;
     -webkit-appearance: none;
@@ -152,20 +206,19 @@
     outline: none;
     transition: border-color 0.15s;
   }
-
-  input[type="number"]:focus {
-    border-color: var(--accent);
-  }
-
+  input[type="number"]:focus { border-color: var(--accent); }
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
-  /* RESULT CARDS */
-  .results {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  .swap-hint {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 2px 0;
   }
+
+  /* RESULT CARDS */
+  .results { display: flex; flex-direction: column; gap: 10px; }
 
   .result-card {
     background: var(--surface);
@@ -175,7 +228,6 @@
     position: relative;
     overflow: hidden;
   }
-
   .result-card::before {
     content: '';
     position: absolute;
@@ -183,7 +235,6 @@
     width: 3px;
     border-radius: 3px 0 0 3px;
   }
-
   .result-card.paralelo::before { background: var(--paralelo); }
   .result-card.oficial::before { background: var(--oficial); }
   .result-card.diff::before { background: var(--diff); }
@@ -194,7 +245,6 @@
     align-items: center;
     margin-bottom: 10px;
   }
-
   .rc-badge {
     font-size: 10px;
     font-weight: 700;
@@ -203,56 +253,21 @@
     padding: 3px 8px;
     border-radius: 20px;
   }
-
   .paralelo .rc-badge { background: rgba(79,124,255,0.15); color: var(--paralelo); }
   .oficial .rc-badge { background: rgba(34,197,94,0.15); color: var(--oficial); }
   .diff .rc-badge { background: rgba(245,158,11,0.15); color: var(--diff); }
+  .rc-rate { font-size: 12px; color: var(--muted); }
 
-  .rc-rate {
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  .result-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 8px;
-  }
-
-  .result-val {
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    line-height: 1;
-  }
-
+  .result-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; }
+  .result-val { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
   .paralelo .result-val { color: var(--paralelo); }
   .oficial .result-val { color: var(--oficial); }
   .diff .result-val { color: var(--diff); }
+  .result-unit { font-size: 13px; font-weight: 600; color: var(--muted); padding-bottom: 3px; }
+  .result-usd { font-size: 14px; font-weight: 600; color: var(--muted); padding-bottom: 3px; }
 
-  .result-unit {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--muted);
-    padding-bottom: 3px;
-  }
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
 
-  .result-usd {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--muted);
-    padding-bottom: 3px;
-  }
-
-  /* DIVIDER */
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 20px 0;
-  }
-
-  /* NOTE */
   .note {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -263,10 +278,8 @@
     line-height: 1.6;
     margin-top: 20px;
   }
-
   .note strong { color: var(--text); }
 
-  /* RESET btn */
   .reset-btn {
     display: block;
     width: 100%;
@@ -279,18 +292,10 @@
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
   }
-
   .reset-btn:active { background: var(--surface2); color: var(--text); }
 
-  /* Zero state */
-  .zero-hint {
-    text-align: center;
-    padding: 24px 0;
-    color: var(--muted);
-    font-size: 14px;
-  }
+  .zero-hint { text-align: center; padding: 24px 0; color: var(--muted); font-size: 14px; }
 </style>
 </head>
 <body>
@@ -300,154 +305,160 @@
   <p>Calculadora P2P · Bolivia</p>
 </header>
 
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('euros')">💶 Euros → BOB</div>
-  <div class="tab" onclick="switchTab('dolares')">💵 Dólares → BOB</div>
-</div>
+<div class="content">
 
-<!-- PANEL EUROS -->
-<div class="panel active" id="panel-euros">
+  <p class="section-label">
+    Tipos de cambio
+    <button class="refresh-btn" onclick="fetchAllRates()" id="refreshBtn">↻ Actualizar</button>
+  </p>
 
-  <p class="section-label">Tipo de cambio</p>
-
-  <div class="input-group">
-    <label>1 Dólar equivale a (€)</label>
-    <div class="input-row">
-      <div class="currency-badge">1 $ =</div>
-      <input type="number" id="e_eur_per_usd" placeholder="0.874" step="0.001" inputmode="decimal" oninput="calcEuros()">
-      <div class="currency-badge">€</div>
+  <div class="rates-strip">
+    <div class="rate-chip">
+      <label><span class="dot pending" id="dot-eur"></span> EUR / USD</label>
+      <div class="rate-input-row">
+        <span class="unit">1$=</span>
+        <input type="number" id="r_eur_per_usd" step="0.001" inputmode="decimal" oninput="onManualRateEdit('eur'); calc();">
+        <span class="unit">€</span>
+      </div>
     </div>
+    <div class="rate-chip">
+      <label><span class="dot pending" id="dot-oficial"></span> Oficial</label>
+      <div class="rate-input-row">
+        <span class="unit">1$=</span>
+        <input type="number" id="r_oficial" step="0.01" inputmode="decimal" oninput="onManualRateEdit('oficial'); calc();">
+        <span class="unit">BOB</span>
+      </div>
+    </div>
+    <div class="rate-chip">
+      <label><span class="dot pending" id="dot-paralelo"></span> Paralelo</label>
+      <div class="rate-input-row">
+        <span class="unit">1$=</span>
+        <input type="number" id="r_paralelo" step="0.01" inputmode="decimal" oninput="onManualRateEdit('paralelo'); calc();">
+        <span class="unit">BOB</span>
+      </div>
+    </div>
+    <div class="rates-meta" id="ratesMeta">Cargando tipos de cambio automáticamente…</div>
   </div>
 
-  <div class="input-group">
-    <label>Euros que quiero cambiar</label>
-    <div class="input-row">
-      <div class="currency-badge">€</div>
-      <input type="number" id="e_euros" placeholder="2800" step="1" inputmode="decimal" oninput="calcEuros()">
-    </div>
-  </div>
+  <div class="divider"></div>
 
-  <div class="input-group">
-    <label>Tipo de cambio paralelo (BOB por $)</label>
-    <div class="input-row">
-      <div class="currency-badge">1 $ =</div>
-      <input type="number" id="e_paralelo" placeholder="9.97" step="0.01" inputmode="decimal" oninput="calcEuros()">
-      <div class="currency-badge">BOB</div>
-    </div>
-  </div>
+  <p class="section-label">Monto a cambiar</p>
 
-  <div class="input-group">
-    <label>Tipo de cambio oficial (BOB por $)</label>
-    <div class="input-row">
-      <div class="currency-badge">1 $ =</div>
-      <input type="number" id="e_oficial" placeholder="6.96" step="0.01" inputmode="decimal" oninput="calcEuros()">
-      <div class="currency-badge">BOB</div>
+  <div class="dual-inputs">
+    <div class="input-group eur">
+      <label>💶 Euros</label>
+      <div class="input-row">
+        <div class="currency-badge">€</div>
+        <input type="number" id="amount_eur" placeholder="2800" step="1" inputmode="decimal" oninput="onAmountEdit('eur')">
+      </div>
+    </div>
+    <div class="swap-hint">≡ equivale a ≡</div>
+    <div class="input-group usd">
+      <label>💵 Dólares</label>
+      <div class="input-row">
+        <div class="currency-badge">$</div>
+        <input type="number" id="amount_usd" placeholder="3500" step="1" inputmode="decimal" oninput="onAmountEdit('usd')">
+      </div>
     </div>
   </div>
 
   <div class="divider"></div>
-  <p class="section-label">Resultado</p>
+  <p class="section-label">Resultado en bolivianos</p>
 
-  <div class="results" id="e_results">
-    <div class="zero-hint">Ingresa los valores arriba para ver el cálculo</div>
+  <div class="results" id="results">
+    <div class="zero-hint">Ingresa un monto en euros o en dólares arriba</div>
   </div>
 
-  <button class="reset-btn" onclick="resetEuros()">↺ Limpiar valores</button>
+  <button class="reset-btn" onclick="resetAll()">↺ Limpiar montos</button>
 
   <div class="note">
     <strong>¿Cómo funciona?</strong><br>
-    La diferencia entre el paralelo y el tipo oficial es tu ganancia real al cambiar fuera del sistema bancario.
-  </div>
-</div>
-
-<!-- PANEL DÓLARES -->
-<div class="panel" id="panel-dolares">
-
-  <p class="section-label">Cantidad a cambiar</p>
-
-  <div class="input-group">
-    <label>Dólares que quiero vender</label>
-    <div class="input-row">
-      <div class="currency-badge">$</div>
-      <input type="number" id="d_dolares" placeholder="5000" step="1" inputmode="decimal" oninput="calcDolares()">
-    </div>
-  </div>
-
-  <div class="input-group">
-    <label>Tipo de cambio paralelo (BOB por $)</label>
-    <div class="input-row">
-      <div class="currency-badge">1 $ =</div>
-      <input type="number" id="d_paralelo" placeholder="9.97" step="0.01" inputmode="decimal" oninput="calcDolares()">
-      <div class="currency-badge">BOB</div>
-    </div>
-  </div>
-
-  <div class="input-group">
-    <label>Tipo de cambio oficial (BOB por $)</label>
-    <div class="input-row">
-      <div class="currency-badge">1 $ =</div>
-      <input type="number" id="d_oficial" placeholder="6.96" step="0.01" inputmode="decimal" oninput="calcDolares()">
-      <div class="currency-badge">BOB</div>
-    </div>
-  </div>
-
-  <div class="divider"></div>
-  <p class="section-label">Resultado</p>
-
-  <div class="results" id="d_results">
-    <div class="zero-hint">Ingresa los valores arriba para ver el cálculo</div>
-  </div>
-
-  <button class="reset-btn" onclick="resetDolares()">↺ Limpiar valores</button>
-
-  <div class="note">
-    <strong>Tipo oficial BOB/$ fijo:</strong> 6,96 BOB.<br>
-    La diferencia entre el paralelo y el tipo oficial es tu ganancia real al cambiar fuera del sistema bancario.
+    Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. Los tipos de cambio se intentan traer automáticamente al abrir la página; si alguno no se pudo leer, edítalo directamente en su casillero de arriba.
   </div>
 </div>
 
 <script>
-  const DEFAULT_OFICIAL = 6.96;
+  let syncing = false;
 
   function fmt(n, decimals = 2) {
     return n.toLocaleString('es-BO', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
   }
 
-  function switchTab(t) {
-    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
-    document.getElementById('panel-' + t).classList.add('active');
-    event.target.classList.add('active');
+  function getRates() {
+    return {
+      eurPerUsd: parseFloat(document.getElementById('r_eur_per_usd').value),
+      paralelo: parseFloat(document.getElementById('r_paralelo').value),
+      oficial: parseFloat(document.getElementById('r_oficial').value)
+    };
   }
 
-  function buildResults(bobParalelo, bobOficial, usdBase, paralelo, oficial, label) {
+  function onManualRateEdit(which) {
+    document.getElementById('dot-' + which).className = 'dot manual';
+  }
+
+  function onAmountEdit(source) {
+    if (syncing) return;
+    const { eurPerUsd } = getRates();
+    if (!eurPerUsd || eurPerUsd <= 0) { calc(); return; }
+
+    syncing = true;
+    if (source === 'eur') {
+      const eur = parseFloat(document.getElementById('amount_eur').value);
+      if (eur > 0) {
+        document.getElementById('amount_usd').value = (eur / eurPerUsd).toFixed(2);
+      } else {
+        document.getElementById('amount_usd').value = '';
+      }
+    } else {
+      const usd = parseFloat(document.getElementById('amount_usd').value);
+      if (usd > 0) {
+        document.getElementById('amount_eur').value = (usd * eurPerUsd).toFixed(2);
+      } else {
+        document.getElementById('amount_eur').value = '';
+      }
+    }
+    syncing = false;
+    calc();
+  }
+
+  function calc() {
+    const usd = parseFloat(document.getElementById('amount_usd').value);
+    const { paralelo, oficial } = getRates();
+    const container = document.getElementById('results');
+
+    if (!usd || usd <= 0 || !paralelo || paralelo <= 0 || !oficial || oficial <= 0) {
+      container.innerHTML = '<div class="zero-hint">Ingresa un monto en euros o en dólares arriba</div>';
+      return;
+    }
+
+    const bobParalelo = usd * paralelo;
+    const bobOficial = usd * oficial;
     const diffBob = bobParalelo - bobOficial;
     const diffUsd = diffBob / paralelo;
-    return `
+
+    container.innerHTML = `
       <div class="result-card paralelo">
         <div class="rc-header">
-          <span class="rc-badge">Paralelo</span>
+          <span class="rc-badge">BOB · Paralelo</span>
           <span class="rc-rate">1 $ = ${fmt(paralelo)} BOB</span>
         </div>
         <div class="result-row">
           <div><div class="result-val">${fmt(bobParalelo)} <span class="result-unit">BOB</span></div></div>
-          <div class="result-usd">${label}${fmt(usdBase)}</div>
+          <div class="result-usd">$${fmt(usd)}</div>
         </div>
       </div>
       <div class="result-card oficial">
         <div class="rc-header">
-          <span class="rc-badge">Oficial</span>
+          <span class="rc-badge">BOB · Oficial</span>
           <span class="rc-rate">1 $ = ${fmt(oficial)} BOB</span>
         </div>
         <div class="result-row">
           <div><div class="result-val">${fmt(bobOficial)} <span class="result-unit">BOB</span></div></div>
-          <div class="result-usd">${label}${fmt(usdBase)}</div>
+          <div class="result-usd">$${fmt(usd)}</div>
         </div>
       </div>
       <div class="result-card diff">
-        <div class="rc-header">
-          <span class="rc-badge">Diferencia que ganas</span>
-        </div>
+        <div class="rc-header"><span class="rc-badge">Diferencia que ganas</span></div>
         <div class="result-row">
           <div><div class="result-val">${fmt(diffBob)} <span class="result-unit">BOB</span></div></div>
           <div class="result-usd">$${fmt(diffUsd)}</div>
@@ -456,47 +467,97 @@
     `;
   }
 
-  function calcEuros() {
-    const eurPerUsd = parseFloat(document.getElementById('e_eur_per_usd').value);
-    const euros = parseFloat(document.getElementById('e_euros').value);
-    const paralelo = parseFloat(document.getElementById('e_paralelo').value);
-    const oficialRaw = parseFloat(document.getElementById('e_oficial').value);
-    const oficial = (oficialRaw > 0) ? oficialRaw : DEFAULT_OFICIAL;
-    const container = document.getElementById('e_results');
+  function resetAll() {
+    document.getElementById('amount_eur').value = '';
+    document.getElementById('amount_usd').value = '';
+    document.getElementById('results').innerHTML = '<div class="zero-hint">Ingresa un monto en euros o en dólares arriba</div>';
+  }
 
-    if (!eurPerUsd || !euros || !paralelo || eurPerUsd <= 0) {
-      container.innerHTML = '<div class="zero-hint">Ingresa los valores arriba para ver el cálculo</div>';
-      return;
+  // --- AUTO-FETCH DE TIPOS DE CAMBIO ---
+  // Oficial (EUR/USD y USD/BOB): open.er-api.com es una API financiera pública y gratuita
+  // con CORS abierto, así que esta parte se lee en vivo de forma confiable.
+  async function fetchOfficial() {
+    try {
+      const res = await fetch('https://open.er-api.com/v6/latest/USD');
+      const data = await res.json();
+      if (data.result !== 'success') throw new Error('api error');
+      document.getElementById('r_eur_per_usd').value = data.rates.EUR.toFixed(4);
+      document.getElementById('r_oficial').value = data.rates.BOB.toFixed(2);
+      document.getElementById('dot-eur').className = 'dot ok';
+      document.getElementById('dot-oficial').className = 'dot ok';
+      return data.time_last_update_utc || null;
+    } catch (err) {
+      document.getElementById('dot-eur').className = 'dot manual';
+      document.getElementById('dot-oficial').className = 'dot manual';
+      return 'error';
     }
-
-    const usd = euros / eurPerUsd;
-    container.innerHTML = buildResults(usd * paralelo, usd * oficial, usd, paralelo, oficial, '$');
   }
 
-  function calcDolares() {
-    const dolares = parseFloat(document.getElementById('d_dolares').value);
-    const paralelo = parseFloat(document.getElementById('d_paralelo').value);
-    const oficialRaw = parseFloat(document.getElementById('d_oficial').value);
-    const oficial = (oficialRaw > 0) ? oficialRaw : DEFAULT_OFICIAL;
-    const container = document.getElementById('d_results');
+  // Paralelo: NO existe una API pública para esto. dolarparalelobolivia.net y
+  // dolarbluebolivia.click son páginas hechas para humanos, sin CORS habilitado, así que se
+  // intenta leer su HTML a través de un proxy público (allorigins). Es un intento de mejor
+  // esfuerzo: si el sitio cambia de diseño o el proxy falla, el campo queda editable a mano.
+  async function fetchParalelo() {
+    const sources = [
+      {
+        url: 'https://dolarparalelobolivia.net/',
+        patterns: [/cotiza\s*(?:hoy)?\s*a\s*Bs\.?\s*([\d]+[.,]\d{1,2})/i, /paralelo[^0-9]{0,40}Bs\.?\s*([\d]+[.,]\d{1,2})/i]
+      },
+      {
+        url: 'https://www.dolarbluebolivia.click/',
+        patterns: [/venta[^0-9]{0,20}Bs\.?\s*([\d]+[.,]\d{1,2})/i, /paralelo[^0-9]{0,40}Bs\.?\s*([\d]+[.,]\d{1,2})/i]
+      }
+    ];
 
-    if (!dolares || !paralelo || paralelo <= 0) {
-      container.innerHTML = '<div class="zero-hint">Ingresa los valores arriba para ver el cálculo</div>';
-      return;
+    for (const src of sources) {
+      try {
+        const proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(src.url);
+        const res = await fetch(proxied);
+        if (!res.ok) continue;
+        const html = await res.text();
+        for (const pattern of src.patterns) {
+          const match = html.match(pattern);
+          if (match) {
+            const val = parseFloat(match[1].replace(',', '.'));
+            if (val > 5 && val < 30) {
+              document.getElementById('r_paralelo').value = val.toFixed(2);
+              document.getElementById('dot-paralelo').className = 'dot ok';
+              return src.url;
+            }
+          }
+        }
+      } catch (err) { /* probar siguiente fuente */ }
     }
-
-    container.innerHTML = buildResults(dolares * paralelo, dolares * oficial, dolares, paralelo, oficial, '$');
+    document.getElementById('dot-paralelo').className = 'dot manual';
+    return null;
   }
 
-  function resetEuros() {
-    ['e_eur_per_usd','e_euros','e_paralelo','e_oficial'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('e_results').innerHTML = '<div class="zero-hint">Ingresa los valores arriba para ver el cálculo</div>';
+  async function fetchAllRates() {
+    const btn = document.getElementById('refreshBtn');
+    const meta = document.getElementById('ratesMeta');
+    btn.disabled = true;
+    btn.textContent = '…';
+    document.querySelectorAll('.dot').forEach(d => d.className = 'dot pending');
+    meta.textContent = 'Consultando fuentes en vivo…';
+
+    const [oficialResult, paraleloSource] = await Promise.all([fetchOfficial(), fetchParalelo()]);
+
+    const now = new Date().toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+    const oficialOk = document.getElementById('dot-oficial').classList.contains('ok');
+    const paraleloOk = document.getElementById('dot-paralelo').classList.contains('ok');
+
+    let msg = 'Actualizado ' + now + '. ';
+    msg += oficialOk ? 'Oficial: open.er-api.com ✓. ' : 'Oficial: no se pudo leer, ingrésalo a mano. ';
+    msg += paraleloOk ? ('Paralelo: leído automáticamente de ' + new URL(paraleloSource).hostname + ' ✓.') : 'Paralelo: no se pudo leer automáticamente — revisa <a href="https://dolarparalelobolivia.net/" target="_blank" rel="noopener">dolarparalelobolivia.net</a> o <a href="https://www.dolarbluebolivia.click/" target="_blank" rel="noopener">dolarbluebolivia.click</a> y corrígelo arriba.';
+    meta.innerHTML = msg;
+
+    btn.disabled = false;
+    btn.textContent = '↻ Actualizar';
+    calc();
   }
 
-  function resetDolares() {
-    ['d_dolares','d_paralelo','d_oficial'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('d_results').innerHTML = '<div class="zero-hint">Ingresa los valores arriba para ver el cálculo</div>';
-  }
+  // Al abrir la página, intenta traer todo automáticamente.
+  fetchAllRates();
 </script>
 </body>
 </html>
