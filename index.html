@@ -57,7 +57,7 @@
     margin-top: 2px;
   }
 
-  .content { padding: 20px 16px; }
+  .content { padding: 20px 16px; max-width: 640px; margin: 0 auto; }
 
   .section-label {
     display: flex;
@@ -130,6 +130,40 @@
     color: var(--muted);
     margin-top: 3px;
     letter-spacing: 0.02em;
+  }
+
+  .rate-chip-slim {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 7px 12px;
+  }
+  .rate-chip-slim .slim-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .rate-chip-slim .unit { font-size: 11px; color: var(--muted); font-weight: 600; }
+  .rate-chip-slim input[type="number"] {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 700;
+    width: 60px;
+    padding: 0;
+    outline: none;
+  }
+  .rate-chip-slim .slim-src {
+    margin-left: auto;
+    font-size: 9px;
+    color: var(--muted);
   }
 
   .rates-meta {
@@ -332,13 +366,13 @@
 
   <div class="rates-strip">
     <div class="rate-chip">
-      <label><span class="dot pending" id="dot-eur"></span> EUR / USD</label>
+      <label><span class="dot pending" id="dot-paralelo"></span> Paralelo</label>
       <div class="rate-input-row">
         <span class="unit">1$=</span>
-        <input type="number" id="r_eur_per_usd" step="0.001" inputmode="decimal" oninput="onManualRateEdit('eur'); calc();">
-        <span class="unit">€</span>
+        <input type="number" id="r_paralelo" step="0.01" inputmode="decimal" oninput="onManualRateEdit('paralelo'); calc();">
+        <span class="unit">BOB</span>
       </div>
-      <span class="src-tag">open.er-api.com</span>
+      <span class="src-tag">dolarparalelobolivia.net</span>
     </div>
     <div class="rate-chip">
       <label><span class="dot pending" id="dot-oficial"></span> Oficial</label>
@@ -349,14 +383,13 @@
       </div>
       <span class="src-tag">bcb.gob.bo (o respaldo con mismo dato)</span>
     </div>
-    <div class="rate-chip">
-      <label><span class="dot pending" id="dot-paralelo"></span> Paralelo</label>
-      <div class="rate-input-row">
-        <span class="unit">1$=</span>
-        <input type="number" id="r_paralelo" step="0.01" inputmode="decimal" oninput="onManualRateEdit('paralelo'); calc();">
-        <span class="unit">BOB</span>
-      </div>
-      <span class="src-tag">dolarparalelobolivia.net</span>
+    <div class="rate-chip-slim">
+      <span class="dot pending" id="dot-eur"></span>
+      <span class="slim-label">EUR/USD</span>
+      <span class="unit">1$=</span>
+      <input type="number" id="r_eur_per_usd" step="0.001" inputmode="decimal" oninput="onManualRateEdit('eur'); calc();">
+      <span class="unit">€</span>
+      <span class="src-tag slim-src">open.er-api.com</span>
     </div>
     <div class="rates-meta" id="ratesMeta">Cargando tipos de cambio automáticamente…</div>
   </div>
@@ -665,3 +698,4 @@
 </script>
 </body>
 </html>
+
