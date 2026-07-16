@@ -124,6 +124,14 @@
 
   .rate-chip .unit { font-size: 11px; color: var(--muted); font-weight: 600; }
 
+  .rate-chip .src-tag {
+    display: block;
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+  }
+
   .rates-meta {
     grid-column: 1 / -1;
     font-size: 10.5px;
@@ -239,6 +247,16 @@
   .result-card.oficial::before { background: var(--oficial); }
   .result-card.diff::before { background: var(--diff); }
 
+  .result-card.better {
+    border-color: rgba(245,158,11,0.4);
+  }
+
+  .result-card.diff {
+    background: linear-gradient(135deg, rgba(245,158,11,0.12), var(--surface));
+    border-color: rgba(245,158,11,0.3);
+  }
+  .result-card.diff .rc-badge { font-size: 11px; }
+
   .result-card .rc-header {
     display: flex;
     justify-content: space-between;
@@ -320,6 +338,7 @@
         <input type="number" id="r_eur_per_usd" step="0.001" inputmode="decimal" oninput="onManualRateEdit('eur'); calc();">
         <span class="unit">€</span>
       </div>
+      <span class="src-tag">open.er-api.com</span>
     </div>
     <div class="rate-chip">
       <label><span class="dot pending" id="dot-oficial"></span> Oficial</label>
@@ -328,6 +347,7 @@
         <input type="number" id="r_oficial" step="0.01" inputmode="decimal" oninput="onManualRateEdit('oficial'); calc();">
         <span class="unit">BOB</span>
       </div>
+      <span class="src-tag">bcb.gob.bo (o respaldo con mismo dato)</span>
     </div>
     <div class="rate-chip">
       <label><span class="dot pending" id="dot-paralelo"></span> Paralelo</label>
@@ -336,6 +356,7 @@
         <input type="number" id="r_paralelo" step="0.01" inputmode="decimal" oninput="onManualRateEdit('paralelo'); calc();">
         <span class="unit">BOB</span>
       </div>
+      <span class="src-tag">dolarparalelobolivia.net</span>
     </div>
     <div class="rates-meta" id="ratesMeta">Cargando tipos de cambio automáticamente…</div>
   </div>
@@ -373,7 +394,7 @@
 
   <div class="note">
     <strong>¿Cómo funciona?</strong><br>
-    Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. Los tipos de cambio se intentan traer automáticamente al abrir la página; si alguno no se pudo leer, edítalo directamente en su casillero de arriba.
+    Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. La calculadora compara paralelo vs. oficial y te dice cuál te conviene y cuántos BOB de más obtienes con esa opción, marcando la tarjeta ganadora con ⭐. El tipo de cambio <strong>oficial</strong> se intenta leer primero directamente de la portada de <strong>bcb.gob.bo</strong> (Banco Central de Bolivia); si esa lectura falla (el número se pinta con JavaScript y a veces no está disponible en una lectura simple del HTML), se usa como respaldo bo.dolarapi.com, que toma el mismo Tipo de Cambio Oficial publicado por el BCB. EUR/USD se lee de open.er-api.com; el <strong>paralelo</strong> no tiene fuente oficial y se intenta leer de sitios de referencia. Si alguno no se pudo leer, edítalo directamente en su casillero de arriba.
   </div>
 </div>
 
@@ -433,13 +454,40 @@
 
     const bobParalelo = usd * paralelo;
     const bobOficial = usd * oficial;
-    const diffBob = bobParalelo - bobOficial;
-    const diffUsd = diffBob / paralelo;
+    const diffBob = Math.abs(bobParalelo - bobOficial);
+    const diffPct = (Math.abs(paralelo - oficial) / Math.min(paralelo, oficial)) * 100;
+
+    let recCard = '';
+    if (paralelo === oficial) {
+      recCard = `
+      <div class="result-card diff">
+        <div class="rc-header"><span class="rc-badge">Sin diferencia</span></div>
+        <div class="result-row">
+          <div><div class="result-val">0,00 <span class="result-unit">BOB</span></div></div>
+        </div>
+      </div>`;
+    } else {
+      const better = paralelo > oficial ? 'paralelo' : 'oficial';
+      const betterLabel = better === 'paralelo' ? 'Paralelo' : 'Oficial';
+      const diffUsd = diffBob / (better === 'paralelo' ? paralelo : oficial);
+      recCard = `
+      <div class="result-card diff">
+        <div class="rc-header">
+          <span class="rc-badge">✓ Te conviene: ${betterLabel}</span>
+          <span class="rc-rate">+${fmt(diffPct, 1)}%</span>
+        </div>
+        <div class="result-row">
+          <div><div class="result-val">+${fmt(diffBob)} <span class="result-unit">BOB de más</span></div></div>
+          <div class="result-usd">≈ $${fmt(diffUsd)}</div>
+        </div>
+      </div>`;
+    }
 
     container.innerHTML = `
-      <div class="result-card paralelo">
+      ${recCard}
+      <div class="result-card paralelo${paralelo > oficial ? ' better' : ''}">
         <div class="rc-header">
-          <span class="rc-badge">BOB · Paralelo</span>
+          <span class="rc-badge">BOB · Paralelo${paralelo > oficial ? ' ⭐' : ''}</span>
           <span class="rc-rate">1 $ = ${fmt(paralelo)} BOB</span>
         </div>
         <div class="result-row">
@@ -447,21 +495,14 @@
           <div class="result-usd">$${fmt(usd)}</div>
         </div>
       </div>
-      <div class="result-card oficial">
+      <div class="result-card oficial${oficial > paralelo ? ' better' : ''}">
         <div class="rc-header">
-          <span class="rc-badge">BOB · Oficial</span>
+          <span class="rc-badge">BOB · Oficial${oficial > paralelo ? ' ⭐' : ''}</span>
           <span class="rc-rate">1 $ = ${fmt(oficial)} BOB</span>
         </div>
         <div class="result-row">
           <div><div class="result-val">${fmt(bobOficial)} <span class="result-unit">BOB</span></div></div>
           <div class="result-usd">$${fmt(usd)}</div>
-        </div>
-      </div>
-      <div class="result-card diff">
-        <div class="rc-header"><span class="rc-badge">Diferencia que ganas</span></div>
-        <div class="result-row">
-          <div><div class="result-val">${fmt(diffBob)} <span class="result-unit">BOB</span></div></div>
-          <div class="result-usd">$${fmt(diffUsd)}</div>
         </div>
       </div>
     `;
@@ -474,22 +515,81 @@
   }
 
   // --- AUTO-FETCH DE TIPOS DE CAMBIO ---
-  // Oficial (EUR/USD y USD/BOB): open.er-api.com es una API financiera pública y gratuita
-  // con CORS abierto, así que esta parte se lee en vivo de forma confiable.
-  async function fetchOfficial() {
+
+  // EUR/USD: open.er-api.com es una API financiera pública y gratuita con CORS abierto,
+  // así que esta parte se lee en vivo de forma confiable. El BCB no publica un tipo
+  // de cambio EUR/USD, por eso esta cotización sigue viniendo de esta fuente externa.
+  async function fetchEurRate() {
     try {
       const res = await fetch('https://open.er-api.com/v6/latest/USD');
       const data = await res.json();
       if (data.result !== 'success') throw new Error('api error');
       document.getElementById('r_eur_per_usd').value = data.rates.EUR.toFixed(4);
-      document.getElementById('r_oficial').value = data.rates.BOB.toFixed(2);
       document.getElementById('dot-eur').className = 'dot ok';
-      document.getElementById('dot-oficial').className = 'dot ok';
-      return data.time_last_update_utc || null;
+      return true;
     } catch (err) {
       document.getElementById('dot-eur').className = 'dot manual';
-      document.getElementById('dot-oficial').className = 'dot manual';
-      return 'error';
+      return false;
+    }
+  }
+
+  // Oficial: se intenta leer PRIMERO directamente de la portada de bcb.gob.bo
+  // (Banco Central de Bolivia), sección "Tipo de cambio oficial · Bolivianos por
+  // Dólar Estadounidense", pasando por un proxy público (allorigins) porque el
+  // sitio del BCB no habilita CORS. En la práctica ese número se pinta en la
+  // portada mediante JavaScript, así que una lectura "cruda" del HTML (sin
+  // ejecutar JS, que es lo único que un fetch del navegador puede hacer) muchas
+  // veces NO lo contiene todavía — por eso este primer intento puede fallar.
+  //
+  // Si eso pasa, como respaldo se consulta bo.dolarapi.com, una API pública que
+  // también toma el Tipo de Cambio Oficial publicado por el BCB (mismo dato,
+  // mismo origen), pero lo entrega ya en JSON con CORS habilitado, lo que la
+  // hace mucho más confiable de leer desde el navegador. Solo si ambos intentos
+  // fallan, el campo queda editable a mano.
+  async function fetchOficialBCBPortada() {
+    const proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.bcb.gob.bo/');
+    const res = await fetch(proxied);
+    if (!res.ok) throw new Error('http ' + res.status);
+    const html = await res.text();
+
+    // Se busca el bloque "Tipo de cambio oficial" / "Bolivianos por Dólar
+    // Estadounidense" y se toma el primer número con 2 decimales que aparece
+    // después (formato boliviano: coma decimal, ej. "10,70").
+    const block = html.match(/Tipo de cambio oficial[\s\S]{0,600}/i);
+    const scope = block ? block[0] : html;
+    const match = scope.match(/(\d{1,2}[.,]\d{2})/);
+    if (!match) throw new Error('no se encontró el valor en el HTML');
+
+    const val = parseFloat(match[1].replace(',', '.'));
+    if (!(val > 3 && val < 30)) throw new Error('valor fuera de rango: ' + val);
+    return val;
+  }
+
+  async function fetchOficialDolarApi() {
+    const res = await fetch('https://bo.dolarapi.com/v1/dolares/oficial');
+    if (!res.ok) throw new Error('http ' + res.status);
+    const data = await res.json();
+    const val = parseFloat(data.venta ?? data.compra);
+    if (!(val > 3 && val < 30)) throw new Error('valor fuera de rango: ' + val);
+    return val;
+  }
+
+  async function fetchOficialBCB() {
+    try {
+      const val = await fetchOficialBCBPortada();
+      document.getElementById('r_oficial').value = val.toFixed(2);
+      document.getElementById('dot-oficial').className = 'dot ok';
+      return 'bcb.gob.bo';
+    } catch (err1) {
+      try {
+        const val = await fetchOficialDolarApi();
+        document.getElementById('r_oficial').value = val.toFixed(2);
+        document.getElementById('dot-oficial').className = 'dot ok';
+        return 'bo.dolarapi.com (dato oficial BCB)';
+      } catch (err2) {
+        document.getElementById('dot-oficial').className = 'dot manual';
+        return null;
+      }
     }
   }
 
@@ -540,14 +640,18 @@
     document.querySelectorAll('.dot').forEach(d => d.className = 'dot pending');
     meta.textContent = 'Consultando fuentes en vivo…';
 
-    const [oficialResult, paraleloSource] = await Promise.all([fetchOfficial(), fetchParalelo()]);
+    const [eurOk, oficialSource, paraleloSource] = await Promise.all([
+      fetchEurRate(),
+      fetchOficialBCB(),
+      fetchParalelo()
+    ]);
 
     const now = new Date().toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
-    const oficialOk = document.getElementById('dot-oficial').classList.contains('ok');
     const paraleloOk = document.getElementById('dot-paralelo').classList.contains('ok');
 
     let msg = 'Actualizado ' + now + '. ';
-    msg += oficialOk ? 'Oficial: open.er-api.com ✓. ' : 'Oficial: no se pudo leer, ingrésalo a mano. ';
+    msg += eurOk ? 'EUR/USD: open.er-api.com ✓. ' : 'EUR/USD: no se pudo leer, ingrésalo a mano. ';
+    msg += oficialSource ? ('Oficial: leído de ' + oficialSource + ' ✓. ') : 'Oficial: no se pudo leer automáticamente, ingrésalo a mano (revisa <a href="https://www.bcb.gob.bo/" target="_blank" rel="noopener">bcb.gob.bo</a>). ';
     msg += paraleloOk ? ('Paralelo: leído automáticamente de ' + new URL(paraleloSource).hostname + ' ✓.') : 'Paralelo: no se pudo leer automáticamente — revisa <a href="https://dolarparalelobolivia.net/" target="_blank" rel="noopener">dolarparalelobolivia.net</a> o <a href="https://www.dolarbluebolivia.click/" target="_blank" rel="noopener">dolarbluebolivia.click</a> y corrígelo arriba.';
     meta.innerHTML = msg;
 
