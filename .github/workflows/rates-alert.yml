@@ -4,7 +4,12 @@ on:
   schedule:
     # Cada 30 minutos. GitHub Actions usa UTC; Bolivia es UTC-4 todo el año.
     - cron: "*/30 * * * *"
-  workflow_dispatch: {}  # permite correrlo a mano desde la pestaña "Actions" para probar
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: "Mandar un mensaje de prueba ahora, sin esperar un cambio real"
+        type: boolean
+        default: false
 
 jobs:
   check-rates:
@@ -27,6 +32,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TEST_MODE: ${{ github.event.inputs.test_mode }}
         run: python scripts/check_rates.py
 
       - name: Guardar el estado actualizado en el repo
@@ -36,4 +42,3 @@ jobs:
           git add state/rates_state.json
           git diff --quiet --cached || git commit -m "Actualiza estado de tipos de cambio [skip ci]"
           git push
-
