@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
 """
 Chequea el tipo de cambio oficial (BCB, vía bo.dolarapi.com) y el paralelo
-(Binance P2P vía criptoya.com, con dolarparalelobolivia.net como respaldo) y avisa
-por Telegram si:
+(dolarparalelobolivia.net) y avisa por Telegram si:
   - alguno cambió respecto a la última vez que se revisó, o
-  - es la hora del resumen diario (una vez al día).
+  - es la hora del resumen diario (una vez al día), que incluye mínimos y
+    máximos de ayer, de esta semana, del mes actual y de los 3 meses
+    anteriores (como referencia).
 
-Guarda el último estado conocido en state/rates_state.json, que este mismo
-script actualiza y que el workflow de GitHub Actions vuelve a commitear al
-repo para recordar entre ejecuciones.
+Guarda:
+  - state/rates_state.json  -> último valor visto + fecha del último resumen
+  - state/history.csv       -> historial de lecturas (fecha/hora, oficial,
+                                paralelo), usado para calcular los mínimos y
+                                máximos del resumen diario.
+
+Ambos los vuelve a commitear el workflow de GitHub Actions para recordar
+entre ejecuciones.
 """
 
+import csv
 import json
 import os
 import re
@@ -19,20 +26,29 @@ from datetime import datetime, timezone, timedelta
 
 import requests
 
-STATE_PATH = os.path.join(os.path.dirname(__file__), "..", "state", "rates_state.json")
+BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
+STATE_PATH = os.path.join(BASE_DIR, "state", "rates_state.json")
+HISTORY_PATH = os.path.join(BASE_DIR, "state", "history.csv")
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-# Hora y minuto local de Bolivia (UTC-4) a la que se manda el resumen diario,
-# aunque no haya cambios. El workflow corre cada 30 min (en :00 y :30), así
-# que conviene dejar el minuto en 0 o 30 para que coincida justo con una
-# ejecución.
+# Hora y minuto local de Bolivia (UTC-4) a partir de la cual se manda el
+# resumen diario (en la primera ejecución del día que ocurra desde esa hora
+# en adelante -- ver comentario más abajo sobre por qué no se usa una
+# ventana exacta).
 DAILY_SUMMARY_HOUR_BOLIVIA = 9
 DAILY_SUMMARY_MINUTE_BOLIVIA = 30
 
+# Cuántos días de historial conservar (de sobra para cubrir "3 meses atrás").
+HISTORY_KEEP_DAYS = 100
+
 BOLIVIA_TZ = timezone(timedelta(hours=-4))
 
+
+# --------------------------------------------------------------------------
+# Lectura de cotizaciones
+# --------------------------------------------------------------------------
 
 def fetch_oficial():
     """Tipo de cambio oficial, tomado del BCB vía bo.dolarapi.com (con fallback a bcb.gob.bo)."""
@@ -46,7 +62,6 @@ def fetch_oficial():
     except Exception:
         pass
 
-    # Fallback: intenta leer la portada del BCB directamente
     try:
         r = requests.get("https://www.bcb.gob.bo/", timeout=15, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
@@ -65,38 +80,15 @@ def fetch_oficial():
 
 
 def fetch_paralelo():
-    """Tipo de cambio paralelo.
-
-    Fuente principal: el endpoint específico de Binance P2P dentro de la API pública
-    de criptoya.com (misma fuente y mismo exchange que se ve en criptoya.com/bo).
-    Se usa el campo "ask" (columna "Comprás a" en criptoya.com/bo), que es el que
-    corresponde a comprar bolivianos usando dólares. Volumen de referencia: 500 USDT,
-    igual que en criptoya.com/bo. Esta es la misma fuente que usa index.html, para que
-    el bot de Telegram y la calculadora web siempre coincidan.
-
-    Respaldo: si esa API falla, se intenta leer (mejor esfuerzo) el HTML de
-    dolarparalelobolivia.net y dolarbluebolivia.click, sin proxy (a diferencia de la
-    versión en el navegador, aquí no hace falta por no aplicar CORS del lado del servidor).
-    """
-    try:
-        r = requests.get("https://criptoya.com/api/binancep2p/usdt/bob/500", timeout=15)
-        r.raise_for_status()
-        data = r.json()
-        val = float(data["ask"])
-        if 5 < val < 30:
-            return val, "criptoya.com/bo (Binance P2P)"
-    except Exception:
-        pass
-
+    """Tipo de cambio paralelo, leído de dolarparalelobolivia.net (sin API pública oficial)."""
     sources = [
         ("https://dolarparalelobolivia.net/", [
-            r"cotiza\s*a\s*Bs\.?\s*([\d]+[.,]\d{1,2})\s*hoy",
-            r"Bs\s*([\d]+[.,]\d{1,2})[\s\S]{0,30}Dolar paralelo",
-            r"paralelo[\s\S]{0,100}?Bs\.?\s*([\d]+[.,]\d{1,2})",
+            r"cotiza\s*(?:hoy)?\s*a\s*Bs\.?\s*([\d]+[.,]\d{1,2})",
+            r"paralelo[^0-9]{0,40}Bs\.?\s*([\d]+[.,]\d{1,2})",
         ]),
         ("https://www.dolarbluebolivia.click/", [
             r"venta[^0-9]{0,20}Bs\.?\s*([\d]+[.,]\d{1,2})",
-            r"paralelo[\s\S]{0,100}?Bs\.?\s*([\d]+[.,]\d{1,2})",
+            r"paralelo[^0-9]{0,40}Bs\.?\s*([\d]+[.,]\d{1,2})",
         ]),
     ]
     for url, patterns in sources:
@@ -115,6 +107,10 @@ def fetch_paralelo():
     return None, None
 
 
+# --------------------------------------------------------------------------
+# Estado (último valor visto)
+# --------------------------------------------------------------------------
+
 def load_state():
     if os.path.exists(STATE_PATH):
         with open(STATE_PATH, "r", encoding="utf-8") as f:
@@ -127,6 +123,63 @@ def save_state(state):
     with open(STATE_PATH, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2, ensure_ascii=False)
 
+
+# --------------------------------------------------------------------------
+# Historial (para mínimos/máximos)
+# --------------------------------------------------------------------------
+
+def load_history():
+    rows = []
+    if os.path.exists(HISTORY_PATH):
+        with open(HISTORY_PATH, "r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    dt = datetime.fromisoformat(row["timestamp"])
+                    oficial = float(row["oficial"]) if row["oficial"] else None
+                    paralelo = float(row["paralelo"]) if row["paralelo"] else None
+                    rows.append({"dt": dt, "oficial": oficial, "paralelo": paralelo})
+                except Exception:
+                    continue
+    return rows
+
+
+def save_history(rows):
+    os.makedirs(os.path.dirname(HISTORY_PATH), exist_ok=True)
+    with open(HISTORY_PATH, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["timestamp", "oficial", "paralelo"])
+        for row in rows:
+            writer.writerow([
+                row["dt"].isoformat(),
+                row["oficial"] if row["oficial"] is not None else "",
+                row["paralelo"] if row["paralelo"] is not None else "",
+            ])
+
+
+def prune_history(rows, now, keep_days=HISTORY_KEEP_DAYS):
+    cutoff = now - timedelta(days=keep_days)
+    return [r for r in rows if r["dt"] >= cutoff]
+
+
+def minmax_in_range(rows, start, end, field):
+    values = [r[field] for r in rows if r[field] is not None and start <= r["dt"] < end]
+    if not values:
+        return None
+    return min(values), max(values)
+
+
+def subtract_months(dt, months):
+    """Resta `months` meses a una fecha, manejando el cambio de año."""
+    month = dt.month - 1 - months
+    year = dt.year + month // 12
+    month = month % 12 + 1
+    return dt.replace(year=year, month=month, day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+# --------------------------------------------------------------------------
+# Telegram
+# --------------------------------------------------------------------------
 
 def send_telegram(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -143,8 +196,62 @@ def fmt(v):
     return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def fmt_range(minmax):
+    if minmax is None:
+        return "sin datos"
+    lo, hi = minmax
+    if lo == hi:
+        return f"{fmt(lo)}"
+    return f"{fmt(lo)} – {fmt(hi)}"
+
+
+# --------------------------------------------------------------------------
+# Resumen diario con mínimos/máximos
+# --------------------------------------------------------------------------
+
+def build_daily_summary(oficial, paralelo, oficial_src, paralelo_src, now_bo, history):
+    today_start = now_bo.replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_start = today_start - timedelta(days=1)
+
+    week_start = today_start - timedelta(days=today_start.weekday())  # lunes de esta semana
+
+    month_start = today_start.replace(day=1)
+    three_months_ago_start = subtract_months(month_start, 3)
+
+    ranges = {
+        "Ayer": (yesterday_start, today_start),
+        "Esta semana": (week_start, now_bo),
+        "Este mes": (month_start, now_bo),
+        "3 meses anteriores": (three_months_ago_start, month_start),
+    }
+
+    diff = paralelo - oficial
+    better = "Paralelo" if diff > 0 else ("Oficial" if diff < 0 else "Igual")
+
+    lines = [
+        f"📅 <b>Resumen diario · {now_bo.strftime('%d/%m/%Y')}</b>",
+        f"Oficial ahora: <b>{fmt(oficial)}</b> BOB/USD",
+        f"Paralelo ahora: <b>{fmt(paralelo)}</b> BOB/USD",
+        f"Te conviene: <b>{better}</b> ({fmt(abs(diff))} BOB de diferencia)",
+        "",
+        "<b>Mín–máx históricos (Oficial / Paralelo):</b>",
+    ]
+
+    for label, (start, end) in ranges.items():
+        of_range = fmt_range(minmax_in_range(history, start, end, "oficial"))
+        pa_range = fmt_range(minmax_in_range(history, start, end, "paralelo"))
+        lines.append(f"• {label}: {of_range}  /  {pa_range}")
+
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------
+# Main
+# --------------------------------------------------------------------------
+
 def main():
     state = load_state()
+    history = load_history()
 
     oficial, oficial_src = fetch_oficial()
     paralelo, paralelo_src = fetch_paralelo()
@@ -152,19 +259,20 @@ def main():
     now_bo = datetime.now(BOLIVIA_TZ)
     today_str = now_bo.strftime("%Y-%m-%d")
 
+    # Registrar esta lectura en el historial (si se pudo leer algo)
+    if oficial is not None or paralelo is not None:
+        history.append({"dt": now_bo, "oficial": oficial, "paralelo": paralelo})
+    history = prune_history(history, now_bo)
+
     messages = []
 
     # --- Modo de prueba: manda un mensaje siempre, sin esperar un cambio real ---
     if os.environ.get("TEST_MODE") == "true":
         if oficial is not None and paralelo is not None:
-            diff = paralelo - oficial
-            better = "Paralelo" if diff > 0 else ("Oficial" if diff < 0 else "Igual")
             messages.append(
-                f"🧪 <b>Mensaje de prueba</b>\n"
-                f"Oficial: <b>{fmt(oficial)}</b> BOB/USD ({oficial_src})\n"
-                f"Paralelo: <b>{fmt(paralelo)}</b> BOB/USD ({paralelo_src})\n"
-                f"Te conviene: <b>{better}</b>\n\n"
-                f"Si ves esto, el bot está funcionando correctamente. ✅"
+                "🧪 <b>Mensaje de prueba</b>\n" +
+                build_daily_summary(oficial, paralelo, oficial_src, paralelo_src, now_bo, history) +
+                "\n\nSi ves esto, el bot está funcionando correctamente. ✅"
             )
         else:
             messages.append("🧪 Prueba: no se pudo leer alguna de las dos cotizaciones ahora mismo.")
@@ -187,22 +295,20 @@ def main():
         )
 
     # --- Resumen diario ---
-    # Ventana de +/-10 min alrededor de la hora:minuto objetivo, por si el cron
-    # de GitHub Actions se atrasa un poco (puede pasar en horas de mucho uso).
+    # GitHub Actions NO garantiza que el cron corra exactamente cada 30 min:
+    # en repos con poco uso suele atrasar o saltarse ejecuciones (a veces por
+    # horas). Por eso, en vez de buscar una ventana exacta alrededor de la
+    # hora objetivo, se manda el resumen en la PRIMERA ejecución del día que
+    # ocurra a partir de la hora:minuto configurados. Como mucho llega un
+    # poco tarde según cuánto se demore GitHub ese día, pero nunca se lo
+    # salta.
     target_minutes = DAILY_SUMMARY_HOUR_BOLIVIA * 60 + DAILY_SUMMARY_MINUTE_BOLIVIA
     now_minutes = now_bo.hour * 60 + now_bo.minute
-    is_summary_time = abs(now_minutes - target_minutes) <= 10
+    is_summary_time = now_minutes >= target_minutes
     already_sent_today = state.get("last_daily_summary_date") == today_str
 
     if is_summary_time and not already_sent_today and oficial is not None and paralelo is not None:
-        diff = paralelo - oficial
-        better = "Paralelo" if diff > 0 else ("Oficial" if diff < 0 else "Igual")
-        messages.append(
-            f"📅 <b>Resumen diario · {now_bo.strftime('%d/%m/%Y')}</b>\n"
-            f"Oficial: <b>{fmt(oficial)}</b> BOB/USD\n"
-            f"Paralelo: <b>{fmt(paralelo)}</b> BOB/USD\n"
-            f"Te conviene: <b>{better}</b> ({fmt(abs(diff))} BOB de diferencia por dólar)"
-        )
+        messages.append(build_daily_summary(oficial, paralelo, oficial_src, paralelo_src, now_bo, history))
         state["last_daily_summary_date"] = today_str
 
     for msg in messages:
@@ -218,6 +324,7 @@ def main():
         state["paralelo"] = paralelo
 
     save_state(state)
+    save_history(history)
 
 
 if __name__ == "__main__":
