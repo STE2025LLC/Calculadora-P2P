@@ -2,8 +2,8 @@ name: Alertas de tipo de cambio (BOB)
 
 on:
   schedule:
-    # Cada 30 minutos. GitHub Actions usa UTC; Bolivia es UTC-4 todo el año.
-    - cron: "*/30 * * * *"
+    # Cada 480 minutos (8 horas). GitHub Actions usa UTC; Bolivia es UTC-4 todo el año.
+    - cron: "*/480 * * * *"
   workflow_dispatch:
     inputs:
       test_mode:
