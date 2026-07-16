@@ -126,6 +126,21 @@ def main():
 
     messages = []
 
+    # --- Modo de prueba: manda un mensaje siempre, sin esperar un cambio real ---
+    if os.environ.get("TEST_MODE") == "true":
+        if oficial is not None and paralelo is not None:
+            diff = paralelo - oficial
+            better = "Paralelo" if diff > 0 else ("Oficial" if diff < 0 else "Igual")
+            messages.append(
+                f"🧪 <b>Mensaje de prueba</b>\n"
+                f"Oficial: <b>{fmt(oficial)}</b> BOB/USD ({oficial_src})\n"
+                f"Paralelo: <b>{fmt(paralelo)}</b> BOB/USD ({paralelo_src})\n"
+                f"Te conviene: <b>{better}</b>\n\n"
+                f"Si ves esto, el bot está funcionando correctamente. ✅"
+            )
+        else:
+            messages.append("🧪 Prueba: no se pudo leer alguna de las dos cotizaciones ahora mismo.")
+
     # --- Detección de cambios ---
     if oficial is not None and state.get("oficial") is not None and oficial != state["oficial"]:
         direction = "subió" if oficial > state["oficial"] else "bajó"
@@ -179,4 +194,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
-
