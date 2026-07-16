@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Chequea el tipo de cambio oficial (BCB, vía bo.dolarapi.com) y el paralelo
-(dolarparalelobolivia.net) y avisa por Telegram si:
+(Binance P2P vía criptoya.com, con dolarparalelobolivia.net como respaldo) y avisa
+por Telegram si:
   - alguno cambió respecto a la última vez que se revisó, o
   - es la hora del resumen diario (una vez al día).
 
@@ -64,15 +65,38 @@ def fetch_oficial():
 
 
 def fetch_paralelo():
-    """Tipo de cambio paralelo, leído de dolarparalelobolivia.net (sin API pública oficial)."""
+    """Tipo de cambio paralelo.
+
+    Fuente principal: el endpoint específico de Binance P2P dentro de la API pública
+    de criptoya.com (misma fuente y mismo exchange que se ve en criptoya.com/bo).
+    Se usa el campo "ask" (columna "Comprás a" en criptoya.com/bo), que es el que
+    corresponde a comprar bolivianos usando dólares. Volumen de referencia: 500 USDT,
+    igual que en criptoya.com/bo. Esta es la misma fuente que usa index.html, para que
+    el bot de Telegram y la calculadora web siempre coincidan.
+
+    Respaldo: si esa API falla, se intenta leer (mejor esfuerzo) el HTML de
+    dolarparalelobolivia.net y dolarbluebolivia.click, sin proxy (a diferencia de la
+    versión en el navegador, aquí no hace falta por no aplicar CORS del lado del servidor).
+    """
+    try:
+        r = requests.get("https://criptoya.com/api/binancep2p/usdt/bob/500", timeout=15)
+        r.raise_for_status()
+        data = r.json()
+        val = float(data["ask"])
+        if 5 < val < 30:
+            return val, "criptoya.com/bo (Binance P2P)"
+    except Exception:
+        pass
+
     sources = [
         ("https://dolarparalelobolivia.net/", [
-            r"cotiza\s*(?:hoy)?\s*a\s*Bs\.?\s*([\d]+[.,]\d{1,2})",
-            r"paralelo[^0-9]{0,40}Bs\.?\s*([\d]+[.,]\d{1,2})",
+            r"cotiza\s*a\s*Bs\.?\s*([\d]+[.,]\d{1,2})\s*hoy",
+            r"Bs\s*([\d]+[.,]\d{1,2})[\s\S]{0,30}Dolar paralelo",
+            r"paralelo[\s\S]{0,100}?Bs\.?\s*([\d]+[.,]\d{1,2})",
         ]),
         ("https://www.dolarbluebolivia.click/", [
             r"venta[^0-9]{0,20}Bs\.?\s*([\d]+[.,]\d{1,2})",
-            r"paralelo[^0-9]{0,40}Bs\.?\s*([\d]+[.,]\d{1,2})",
+            r"paralelo[\s\S]{0,100}?Bs\.?\s*([\d]+[.,]\d{1,2})",
         ]),
     ]
     for url, patterns in sources:
