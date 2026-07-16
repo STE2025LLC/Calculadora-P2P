@@ -23,8 +23,12 @@ STATE_PATH = os.path.join(os.path.dirname(__file__), "..", "state", "rates_state
 TELEGRAM_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-# Hora local de Bolivia (UTC-4) a la que se manda el resumen diario, aunque no haya cambios.
-DAILY_SUMMARY_HOUR_BOLIVIA = 8
+# Hora y minuto local de Bolivia (UTC-4) a la que se manda el resumen diario,
+# aunque no haya cambios. El workflow corre cada 30 min (en :00 y :30), así
+# que conviene dejar el minuto en 0 o 30 para que coincida justo con una
+# ejecución.
+DAILY_SUMMARY_HOUR_BOLIVIA = 9
+DAILY_SUMMARY_MINUTE_BOLIVIA = 30
 
 BOLIVIA_TZ = timezone(timedelta(hours=-4))
 
@@ -159,7 +163,11 @@ def main():
         )
 
     # --- Resumen diario ---
-    is_summary_time = now_bo.hour == DAILY_SUMMARY_HOUR_BOLIVIA
+    # Ventana de +/-10 min alrededor de la hora:minuto objetivo, por si el cron
+    # de GitHub Actions se atrasa un poco (puede pasar en horas de mucho uso).
+    target_minutes = DAILY_SUMMARY_HOUR_BOLIVIA * 60 + DAILY_SUMMARY_MINUTE_BOLIVIA
+    now_minutes = now_bo.hour * 60 + now_bo.minute
+    is_summary_time = abs(now_minutes - target_minutes) <= 10
     already_sent_today = state.get("last_daily_summary_date") == today_str
 
     if is_summary_time and not already_sent_today and oficial is not None and paralelo is not None:
