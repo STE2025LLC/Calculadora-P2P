@@ -1,10 +1,15 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Calculadora P2P · BOB</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%0A%3Cdefs%3E%0A%3CradialGradient%20id%3D%22a%22%20cx%3D%2238%25%22%20cy%3D%2232%25%22%20r%3D%2280%25%22%3E%0A%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%231c2140%22/%3E%0A%3Cstop%20offset%3D%2260%25%22%20stop-color%3D%22%23141830%22/%3E%0A%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230a0c18%22/%3E%0A%3C/radialGradient%3E%0A%3ClinearGradient%20id%3D%22b%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%0A%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%236f93ff%22/%3E%0A%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%234f7cff%22/%3E%0A%3C/linearGradient%3E%0A%3ClinearGradient%20id%3D%22c%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%0A%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234ade80%22/%3E%0A%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%2322c55e%22/%3E%0A%3C/linearGradient%3E%0A%3C/defs%3E%0A%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2248%22%20fill%3D%22url%28%23a%29%22/%3E%0A%3Cpath%20d%3D%22M%2028%2036%20A%2025%2025%200%200%201%2076%2036%22%20fill%3D%22none%22%20stroke%3D%22url%28%23b%29%22%20stroke-width%3D%226%22%20stroke-linecap%3D%22round%22/%3E%0A%3Cpolygon%20points%3D%2274%2C29%2084%2C37%2072%2C42%22%20fill%3D%22url%28%23b%29%22/%3E%0A%3Cpath%20d%3D%22M%2070%2064%20A%2025%2025%200%200%201%2022%2064%22%20fill%3D%22none%22%20stroke%3D%22url%28%23c%29%22%20stroke-width%3D%226%22%20stroke-linecap%3D%22round%22/%3E%0A%3Cpolygon%20points%3D%2224%2C71%2014%2C63%2026%2C58%22%20fill%3D%22url%28%23c%29%22/%3E%0A%3Ctext%20x%3D%2237%22%20y%3D%2259%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%22%20font-weight%3D%22800%22%20font-size%3D%2220%22%20fill%3D%22%23f4f5f9%22%3E%24%3C/text%3E%0A%3Ctext%20x%3D%2264%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%22%20font-weight%3D%22800%22%20font-size%3D%2213%22%20fill%3D%22%23f4f5f9%22%3EBs%3C/text%3E%0A%3C/svg%3E">
 <style>
   :root {
     --bg: #0f1117;
@@ -28,7 +33,10 @@
 
   body {
     font-family: var(--font);
-    background: var(--bg);
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(79,124,255,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 90% 10%, rgba(34,197,94,0.07), transparent 60%),
+      var(--bg);
     color: var(--text);
     min-height: 100vh;
     padding-bottom: 40px;
@@ -56,6 +64,22 @@
     font-weight: 700;
     color: var(--text);
     margin-top: 2px;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .header-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
   }
 
   .content { padding: 20px 16px; max-width: 640px; margin: 0 auto; }
@@ -354,8 +378,37 @@
 <body>
 
 <header>
-  <h1>STE · Cambio de divisas</h1>
-  <p>Calculadora P2P · Bolivia</p>
+  <div class="header-inner">
+    <svg class="header-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="logoBg" cx="38%" cy="32%" r="80%">
+          <stop offset="0%" stop-color="#1c2140"/>
+          <stop offset="60%" stop-color="#141830"/>
+          <stop offset="100%" stop-color="#0a0c18"/>
+        </radialGradient>
+        <linearGradient id="logoBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#6f93ff"/>
+          <stop offset="100%" stop-color="#4f7cff"/>
+        </linearGradient>
+        <linearGradient id="logoGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#4ade80"/>
+          <stop offset="100%" stop-color="#22c55e"/>
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="48" fill="url(#logoBg)"/>
+      <circle cx="50" cy="50" r="47" fill="none" stroke="#2e3350" stroke-width="1.5"/>
+      <path d="M 28 36 A 25 25 0 0 1 76 36" fill="none" stroke="url(#logoBlue)" stroke-width="5.5" stroke-linecap="round"/>
+      <polygon points="74,29 84,37 72,42" fill="url(#logoBlue)"/>
+      <path d="M 70 64 A 25 25 0 0 1 22 64" fill="none" stroke="url(#logoGreen)" stroke-width="5.5" stroke-linecap="round"/>
+      <polygon points="24,71 14,63 26,58" fill="url(#logoGreen)"/>
+      <text x="37" y="58" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="18" fill="#f4f5f9">$</text>
+      <text x="63" y="55" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="12" fill="#f4f5f9">Bs</text>
+    </svg>
+    <div>
+      <h1>STE · Cambio de divisas</h1>
+      <p>Calculadora P2P · Bolivia</p>
+    </div>
+  </div>
 </header>
 
 <div class="content">
@@ -373,7 +426,7 @@
         <input type="number" id="r_paralelo" step="0.01" inputmode="decimal" oninput="onManualRateEdit('paralelo'); calc();">
         <span class="unit">BOB</span>
       </div>
-      <span class="src-tag">Binance P2P vía criptoya.com/bo</span>
+      <span class="src-tag">dolarparalelobolivia.net</span>
     </div>
     <div class="rate-chip">
       <label><span class="dot pending" id="dot-oficial"></span> Oficial</label>
@@ -428,7 +481,7 @@
 
   <div class="note">
     <strong>¿Cómo funciona?</strong><br>
-    Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. La calculadora compara paralelo vs. oficial y te dice cuál te conviene y cuántos BOB de más obtienes con esa opción, marcando la tarjeta ganadora con ⭐. El tipo de cambio <strong>oficial</strong> se intenta leer primero directamente de la portada de <strong>bcb.gob.bo</strong> (Banco Central de Bolivia); si esa lectura falla (el número se pinta con JavaScript y a veces no está disponible en una lectura simple del HTML), se usa como respaldo bo.dolarapi.com, que toma el mismo Tipo de Cambio Oficial publicado por el BCB. EUR/USD se lee de open.er-api.com. El <strong>paralelo</strong> se lee del precio "Comprás a" de Binance P2P (USDT/BOB) a través del endpoint específico de la API pública de criptoya.com — el mismo dato que ves en la tabla de <strong>criptoya.com/bo</strong>, con CORS habilitado y sin necesitar proxy; si esa API no responde, como respaldo se intenta leer el HTML de sitios de referencia a través de un proxy público, que puede fallar en cualquier momento. Si alguno no se pudo leer, edítalo directamente en su casillero de arriba.
+    Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. La calculadora compara paralelo vs. oficial y te dice cuál te conviene y cuántos BOB de más obtienes con esa opción, marcando la tarjeta ganadora con ⭐. El tipo de cambio <strong>oficial</strong> se intenta leer primero directamente de la portada de <strong>bcb.gob.bo</strong> (Banco Central de Bolivia); si esa lectura falla (el número se pinta con JavaScript y a veces no está disponible en una lectura simple del HTML), se usa como respaldo bo.dolarapi.com, que toma el mismo Tipo de Cambio Oficial publicado por el BCB. EUR/USD se lee de open.er-api.com; el <strong>paralelo</strong> no tiene fuente oficial y se intenta leer de sitios de referencia. Si alguno no se pudo leer, edítalo directamente en su casillero de arriba.
   </div>
 </div>
 
@@ -567,17 +620,19 @@
     }
   }
 
-  // Oficial — FUENTE PRINCIPAL: bo.dolarapi.com, una API pública que toma el mismo
-  // Tipo de Cambio Oficial publicado por el BCB, pero lo entrega ya en JSON con CORS
-  // habilitado — sin proxy, rápido y confiable.
+  // Oficial: se intenta leer PRIMERO directamente de la portada de bcb.gob.bo
+  // (Banco Central de Bolivia), sección "Tipo de cambio oficial · Bolivianos por
+  // Dólar Estadounidense", pasando por un proxy público (allorigins) porque el
+  // sitio del BCB no habilita CORS. En la práctica ese número se pinta en la
+  // portada mediante JavaScript, así que una lectura "cruda" del HTML (sin
+  // ejecutar JS, que es lo único que un fetch del navegador puede hacer) muchas
+  // veces NO lo contiene todavía — por eso este primer intento puede fallar.
   //
-  // Oficial — RESPALDO: si esa API falla, se intenta leer directamente la portada de
-  // bcb.gob.bo (Banco Central de Bolivia), sección "Tipo de cambio oficial · Bolivianos
-  // por Dólar Estadounidense", pasando por un proxy público (allorigins) porque el sitio
-  // del BCB no habilita CORS. Este camino es más lento y menos confiable (el proxy
-  // gratuito puede tardar varios segundos en responder o fallar, y el número a veces se
-  // pinta con JavaScript y no aparece en una lectura simple del HTML) — por eso quedó
-  // como plan B en vez de intentarse primero.
+  // Si eso pasa, como respaldo se consulta bo.dolarapi.com, una API pública que
+  // también toma el Tipo de Cambio Oficial publicado por el BCB (mismo dato,
+  // mismo origen), pero lo entrega ya en JSON con CORS habilitado, lo que la
+  // hace mucho más confiable de leer desde el navegador. Solo si ambos intentos
+  // fallan, el campo queda editable a mano.
   async function fetchOficialBCBPortada() {
     const proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.bcb.gob.bo/');
     const res = await fetch(proxied);
@@ -608,16 +663,16 @@
 
   async function fetchOficialBCB() {
     try {
-      const val = await fetchOficialDolarApi();
+      const val = await fetchOficialBCBPortada();
       document.getElementById('r_oficial').value = val.toFixed(2);
       document.getElementById('dot-oficial').className = 'dot ok';
-      return 'bo.dolarapi.com (dato oficial BCB)';
+      return 'bcb.gob.bo';
     } catch (err1) {
       try {
-        const val = await fetchOficialBCBPortada();
+        const val = await fetchOficialDolarApi();
         document.getElementById('r_oficial').value = val.toFixed(2);
         document.getElementById('dot-oficial').className = 'dot ok';
-        return 'bcb.gob.bo';
+        return 'bo.dolarapi.com (dato oficial BCB)';
       } catch (err2) {
         document.getElementById('dot-oficial').className = 'dot manual';
         return null;
@@ -625,38 +680,19 @@
     }
   }
 
-  // Paralelo — FUENTE PRINCIPAL: el endpoint específico de Binance P2P dentro de la API
-  // pública de criptoya.com (la misma fuente y el mismo exchange que se ve en
-  // criptoya.com/bo). Responde JSON con CORS habilitado, sin proxy. Se usa el "ask"
-  // (columna "Comprás a" en criptoya.com/bo), que es la que corresponde a comprar
-  // bolivianos usando dólares. El volumen de referencia es 500 USDT, igual que en
-  // criptoya.com/bo.
-  async function fetchParaleloCriptoYa() {
-    const res = await fetch('https://criptoya.com/api/binancep2p/usdt/bob/500');
-    if (!res.ok) throw new Error('http ' + res.status);
-    const data = await res.json();
-    const val = parseFloat(data.ask);
-    if (!(val > 5 && val < 30)) throw new Error('valor fuera de rango: ' + val);
-    return val;
-  }
-
-  // Paralelo — RESPALDO: si criptoya.com falla, se intenta leer (mejor esfuerzo) el HTML
-  // de dolarparalelobolivia.net y dolarbluebolivia.click a través de un proxy público
-  // (allorigins). Estas páginas no tienen CORS habilitado, y el proxy gratuito puede
-  // fallar o quedar limitado en cualquier momento — por eso es solo el plan B.
-  async function fetchParaleloScraping() {
+  // Paralelo: NO existe una API pública para esto. dolarparalelobolivia.net y
+  // dolarbluebolivia.click son páginas hechas para humanos, sin CORS habilitado, así que se
+  // intenta leer su HTML a través de un proxy público (allorigins). Es un intento de mejor
+  // esfuerzo: si el sitio cambia de diseño o el proxy falla, el campo queda editable a mano.
+  async function fetchParalelo() {
     const sources = [
       {
         url: 'https://dolarparalelobolivia.net/',
-        patterns: [
-          /cotiza\s*a\s*Bs\.?\s*([\d]+[.,]\d{1,2})\s*hoy/i,
-          /Bs\s*([\d]+[.,]\d{1,2})[\s\S]{0,30}Dolar paralelo/i,
-          /paralelo[\s\S]{0,100}?Bs\.?\s*([\d]+[.,]\d{1,2})/i
-        ]
+        patterns: [/cotiza\s*(?:hoy)?\s*a\s*Bs\.?\s*([\d]+[.,]\d{1,2})/i, /paralelo[^0-9]{0,40}Bs\.?\s*([\d]+[.,]\d{1,2})/i]
       },
       {
         url: 'https://www.dolarbluebolivia.click/',
-        patterns: [/venta[^0-9]{0,20}Bs\.?\s*([\d]+[.,]\d{1,2})/i, /paralelo[\s\S]{0,100}?Bs\.?\s*([\d]+[.,]\d{1,2})/i]
+        patterns: [/venta[^0-9]{0,20}Bs\.?\s*([\d]+[.,]\d{1,2})/i, /paralelo[^0-9]{0,40}Bs\.?\s*([\d]+[.,]\d{1,2})/i]
       }
     ];
 
@@ -671,31 +707,16 @@
           if (match) {
             const val = parseFloat(match[1].replace(',', '.'));
             if (val > 5 && val < 30) {
-              return { val, url: src.url };
+              document.getElementById('r_paralelo').value = val.toFixed(2);
+              document.getElementById('dot-paralelo').className = 'dot ok';
+              return src.url;
             }
           }
         }
       } catch (err) { /* probar siguiente fuente */ }
     }
+    document.getElementById('dot-paralelo').className = 'dot manual';
     return null;
-  }
-
-  async function fetchParalelo() {
-    try {
-      const val = await fetchParaleloCriptoYa();
-      document.getElementById('r_paralelo').value = val.toFixed(2);
-      document.getElementById('dot-paralelo').className = 'dot ok';
-      return 'https://criptoya.com/bo (Binance P2P)';
-    } catch (err) {
-      const scraped = await fetchParaleloScraping();
-      if (scraped) {
-        document.getElementById('r_paralelo').value = scraped.val.toFixed(2);
-        document.getElementById('dot-paralelo').className = 'dot ok';
-        return scraped.url;
-      }
-      document.getElementById('dot-paralelo').className = 'dot manual';
-      return null;
-    }
   }
 
   async function fetchAllRates() {
@@ -718,7 +739,7 @@
     let msg = 'Actualizado ' + now + '. ';
     msg += eurOk ? 'EUR/USD: open.er-api.com ✓. ' : 'EUR/USD: no se pudo leer, ingrésalo a mano. ';
     msg += oficialSource ? ('Oficial: leído de ' + oficialSource + ' ✓. ') : 'Oficial: no se pudo leer automáticamente, ingrésalo a mano (revisa <a href="https://www.bcb.gob.bo/" target="_blank" rel="noopener">bcb.gob.bo</a>). ';
-    msg += paraleloOk ? ('Paralelo: leído automáticamente de ' + paraleloSource + ' ✓.') : 'Paralelo: no se pudo leer automáticamente — revisa <a href="https://dolarparalelobolivia.net/" target="_blank" rel="noopener">dolarparalelobolivia.net</a> o <a href="https://www.dolarbluebolivia.click/" target="_blank" rel="noopener">dolarbluebolivia.click</a> y corrígelo arriba.';
+    msg += paraleloOk ? ('Paralelo: leído automáticamente de ' + new URL(paraleloSource).hostname + ' ✓.') : 'Paralelo: no se pudo leer automáticamente — revisa <a href="https://dolarparalelobolivia.net/" target="_blank" rel="noopener">dolarparalelobolivia.net</a> o <a href="https://www.dolarbluebolivia.click/" target="_blank" rel="noopener">dolarbluebolivia.click</a> y corrígelo arriba.';
     meta.innerHTML = msg;
 
     btn.disabled = false;
