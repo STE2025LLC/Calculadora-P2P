@@ -3,11 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
-<link rel="manifest" href="assets/icons/site.webmanifest">
 <title>Calculadora P2P · BOB</title>
 <style>
   :root {
@@ -632,27 +627,16 @@
   // Paralelo — FUENTE PRINCIPAL: el endpoint específico de Binance P2P dentro de la API
   // pública de criptoya.com (la misma fuente y el mismo exchange que se ve en
   // criptoya.com/bo). Responde JSON con CORS habilitado, sin proxy. Se usa el "bid"
-  // (columna "Vendés a" en criptoya.com/bo), que es el precio al que vos vendés tus
+  // (columna "Vendés a" en criptoya.com/bo), que es el precio al que vendés tus
   // dólares/USDT y recibís bolivianos — el caso de esta calculadora. El volumen de
-  // referencia es 500 USDT, igual que en criptoya.com/bo. Se reintenta una vez (con una
-  // breve espera) antes de darse por vencido, ya que suele tratarse de fallas
-  // transitorias que un segundo intento resuelve solo.
-  async function fetchParaleloCriptoYaOnce() {
+  // referencia es 500 USDT, igual que en criptoya.com/bo.
+  async function fetchParaleloCriptoYa() {
     const res = await fetch('https://criptoya.com/api/binancep2p/usdt/bob/500');
     if (!res.ok) throw new Error('http ' + res.status);
     const data = await res.json();
     const val = parseFloat(data.bid);
     if (!(val > 5 && val < 30)) throw new Error('valor fuera de rango: ' + val);
     return val;
-  }
-
-  async function fetchParaleloCriptoYa() {
-    try {
-      return await fetchParaleloCriptoYaOnce();
-    } catch (err) {
-      await new Promise(r => setTimeout(r, 1500));
-      return await fetchParaleloCriptoYaOnce();
-    }
   }
 
   // Paralelo — RESPALDO: si criptoya.com falla, se intenta leer (mejor esfuerzo) el HTML
