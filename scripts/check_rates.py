@@ -44,6 +44,13 @@ DAILY_SUMMARY_MINUTE_BOLIVIA = 30
 # Cuántos días de historial conservar (de sobra para cubrir "3 meses atrás").
 HISTORY_KEEP_DAYS = 100
 
+# Cuántos decimales considerar "el mismo valor" al comparar contra la lectura
+# anterior. Sin esto, diferencias invisibles por decimales de más que a veces
+# devuelven las APIs (ej. 10.700001 vs 10.700003) dispararían alertas de
+# "cambio" que en realidad no se notan en la calculadora (que solo muestra 2
+# decimales).
+COMPARE_DECIMALS = 2
+
 BOLIVIA_TZ = timezone(timedelta(hours=-4))
 
 
@@ -302,7 +309,14 @@ def main():
             messages.append("🧪 Prueba: no se pudo leer alguna de las dos cotizaciones ahora mismo.")
 
     # --- Detección de cambios ---
-    if oficial is not None and state.get("oficial") is not None and oficial != state["oficial"]:
+    # Se compara redondeando a COMPARE_DECIMALS para no disparar alertas por
+    # diferencias de decimales que no se notan en la calculadora (que solo
+    # muestra 2 decimales).
+    if (
+        oficial is not None
+        and state.get("oficial") is not None
+        and round(oficial, COMPARE_DECIMALS) != round(state["oficial"], COMPARE_DECIMALS)
+    ):
         direction = "subió" if oficial > state["oficial"] else "bajó"
         messages.append(
             f"🟢 <b>Oficial {direction}</b>\n"
@@ -310,7 +324,11 @@ def main():
             f"Fuente: {oficial_src}"
         )
 
-    if paralelo is not None and state.get("paralelo") is not None and paralelo != state["paralelo"]:
+    if (
+        paralelo is not None
+        and state.get("paralelo") is not None
+        and round(paralelo, COMPARE_DECIMALS) != round(state["paralelo"], COMPARE_DECIMALS)
+    ):
         direction = "subió" if paralelo > state["paralelo"] else "bajó"
         messages.append(
             f"🔵 <b>Paralelo {direction}</b>\n"
