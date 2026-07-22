@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
 Chequea el tipo de cambio oficial (BCB, vía bo.dolarapi.com) y el paralelo
-(Binance P2P DIRECTO, filtrado por método de pago Banco Ganadero y mínimo de
-USDT disponibles, sin pasar por criptoya) y avisa por Telegram si:
+(Binance P2P DIRECTO, filtrado por método de pago Banco Ganadero, mínimo de
+USDT disponibles, y límite de transacción realista, sin pasar por criptoya)
+y avisa por Telegram si:
   - alguno cambió respecto a la última vez que se revisó, o
   - es la hora del resumen diario (una vez al día), que incluye mínimos y
     máximos de ayer, de esta semana, del mes actual y de los 3 meses
@@ -34,21 +35,11 @@ HISTORY_PATH = os.path.join(BASE_DIR, "state", "history.csv")
 TELEGRAM_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-# Hora y minuto local de Bolivia (UTC-4) a partir de la cual se manda el
-# resumen diario (en la primera ejecución del día que ocurra desde esa hora
-# en adelante -- ver comentario más abajo sobre por qué no se usa una
-# ventana exacta).
 DAILY_SUMMARY_HOUR_BOLIVIA = 9
 DAILY_SUMMARY_MINUTE_BOLIVIA = 30
 
-# Cuántos días de historial conservar (de sobra para cubrir "3 meses atrás").
 HISTORY_KEEP_DAYS = 100
 
-# Cuántos decimales considerar "el mismo valor" al comparar contra la lectura
-# anterior. Sin esto, diferencias invisibles por decimales de más que a veces
-# devuelven las APIs (ej. 10.700001 vs 10.700003) dispararían alertas de
-# "cambio" que en realidad no se notan en la calculadora (que solo muestra 2
-# decimales).
 COMPARE_DECIMALS = 2
 
 # --- Filtros para el paralelo (Binance P2P directo) ---
@@ -57,8 +48,16 @@ COMPARE_DECIMALS = 2
 # anunciante lo detalló (payBank), porque cuál de los dos trae el dato varía
 # según el anuncio.
 BANCO_REQUERIDO = "Banco Ganadero"
-# Mínimo de USDT disponibles en el anuncio para considerarlo.
+# Mínimo de USDT disponibles EN TOTAL en el anuncio.
 MIN_USDT_DISPONIBLE = 1000
+# Mínimo de BOB permitido POR TRANSACCIÓN (maxSingleTransAmount). Sin esto,
+# se cuelan anuncios "señuelo" que muestran mucho volumen total disponible
+# pero limitan cada operación individual a montos ridículamente chicos
+# (ej. máximo 56 BOB por transacción), lo cual en la práctica los hace
+# inoperables para un monto real. La web de Binance ya descarta estos
+# anuncios automáticamente al filtrar con un importe normal; este filtro
+# imita ese comportamiento.
+MIN_MAX_TRANS_BOB = 1000
 # (sin filtro de cantidad de órdenes/mes, a propósito)
 
 BOLIVIA_TZ = timezone(timedelta(hours=-4))
@@ -98,9 +97,14 @@ def fetch_oficial():
 
 
 def _anuncio_cumple_filtros(adv):
-    """Aplica los filtros de banco y USDT disponible a un anuncio de Binance P2P."""
+    """Aplica los filtros de banco, USDT disponible, y límite de transacción
+    realista a un anuncio de Binance P2P."""
     disponible = float(adv.get("surplusAmount", 0) or 0)
     if disponible < MIN_USDT_DISPONIBLE:
+        return False
+
+    max_trans = float(adv.get("maxSingleTransAmount", 0) or 0)
+    if max_trans < MIN_MAX_TRANS_BOB:
         return False
 
     if BANCO_REQUERIDO:
@@ -123,9 +127,10 @@ def fetch_paralelo_binance_directo():
     documentado por Binance) que usa la propia web p2p.binance.com.
 
     Se piden anuncios de venta de USDT/BOB, se filtran por los criterios de
-    arriba (banco + mínimo disponible), y se toma el MEJOR precio (el más
-    alto) entre los que cumplen -- porque estás vendiendo USDT y recibiendo
-    BOB, así que precio más alto = más bolivianos por tus dólares.
+    arriba (banco + mínimo disponible + límite de transacción realista), y
+    se toma el MEJOR precio (el más alto) entre los que cumplen -- porque
+    estás vendiendo USDT y recibiendo BOB, así que precio más alto = más
+    bolivianos por tus dólares.
 
     Devuelve (None, None) si la API falla o si ningún anuncio cumple los
     filtros (en ese caso, quien llama a esta función debe recurrir al
@@ -161,21 +166,6 @@ def fetch_paralelo_binance_directo():
         if not _anuncio_cumple_filtros(adv):
             continue
 
-        # DEBUG temporal: para diagnosticar discrepancias entre lo que trae
-        # esta API y lo que se ve en la web. Esto queda solo en los logs de
-        # Actions, no se manda a Telegram. Se puede borrar este bloque una
-        # vez resuelto el diagnóstico.
-        print(
-            f"[debug] candidato: precio={adv.get('price')} "
-            f"anunciante={advertiser.get('nickName')} "
-            f"isTradable={adv.get('isTradable')} "
-            f"isBlocked={advertiser.get('isBlocked')} "
-            f"disponible={adv.get('surplusAmount')} "
-            f"minTrans={adv.get('minSingleTransAmount')} "
-            f"maxTrans={adv.get('maxSingleTransAmount')} "
-            f"monthOrderCount={advertiser.get('monthOrderCount')}"
-        )
-
         try:
             candidatos.append((float(adv["price"]), adv, advertiser))
         except (TypeError, ValueError, KeyError):
@@ -186,7 +176,7 @@ def fetch_paralelo_binance_directo():
 
     mejor_precio, mejor_adv, mejor_advertiser = max(candidatos, key=lambda c: c[0])
     if 5 < mejor_precio < 30:
-        return mejor_precio, f"Binance P2P directo (filtro: {BANCO_REQUERIDO}, min {MIN_USDT_DISPONIBLE} USDT)"
+        return mejor_precio, f"Binance P2P directo (filtro: {BANCO_REQUERIDO}, min {MIN_USDT_DISPONIBLE} USDT, max/trans >= {MIN_MAX_TRANS_BOB} BOB)"
 
     return None, None
 
@@ -195,7 +185,8 @@ def fetch_paralelo():
     """Tipo de cambio paralelo.
 
     Fuente principal: Binance P2P DIRECTO (sin pasar por criptoya), aplicando
-    tus filtros de banco y volumen mínimo -- ver fetch_paralelo_binance_directo().
+    tus filtros de banco, volumen mínimo y límite de transacción realista --
+    ver fetch_paralelo_binance_directo().
 
     Respaldo 1: si esa consulta falla o ningún anuncio cumple los filtros, se
     usa el mismo dato de Binance P2P pero vía criptoya.com (sin tus filtros
@@ -400,14 +391,12 @@ def main():
     now_bo = datetime.now(BOLIVIA_TZ)
     today_str = now_bo.strftime("%Y-%m-%d")
 
-    # Registrar esta lectura en el historial (si se pudo leer algo)
     if oficial is not None or paralelo is not None:
         history.append({"dt": now_bo, "oficial": oficial, "paralelo": paralelo})
     history = prune_history(history, now_bo)
 
     messages = []
 
-    # --- Modo de prueba: manda un mensaje siempre, sin esperar un cambio real ---
     if os.environ.get("TEST_MODE") == "true":
         if oficial is not None and paralelo is not None:
             messages.append(
@@ -418,7 +407,6 @@ def main():
         else:
             messages.append("🧪 Prueba: no se pudo leer alguna de las dos cotizaciones ahora mismo.")
 
-    # --- Detección de cambios ---
     if (
         oficial is not None
         and state.get("oficial") is not None
@@ -443,7 +431,6 @@ def main():
             f"Fuente: {paralelo_src}"
         )
 
-    # --- Resumen diario ---
     target_minutes = DAILY_SUMMARY_HOUR_BOLIVIA * 60 + DAILY_SUMMARY_MINUTE_BOLIVIA
     now_minutes = now_bo.hour * 60 + now_bo.minute
     is_summary_time = now_minutes >= target_minutes
