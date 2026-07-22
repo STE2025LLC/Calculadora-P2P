@@ -176,7 +176,7 @@ def fetch_paralelo_binance_directo():
 
     mejor_precio, mejor_adv, mejor_advertiser = max(candidatos, key=lambda c: c[0])
     if 5 < mejor_precio < 30:
-        return mejor_precio, f"Binance P2P directo (filtro: {BANCO_REQUERIDO}, min {MIN_USDT_DISPONIBLE} USDT, max/trans >= {MIN_MAX_TRANS_BOB} BOB)"
+        return mejor_precio, "Binance P2P directo"
 
     return None, None
 
