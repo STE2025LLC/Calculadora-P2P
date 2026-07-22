@@ -6,8 +6,8 @@ TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
 # --- FILTROS: ajustá estos valores a tu gusto ---
 BANCO_REQUERIDO = "Banco Ganadero"   # None para no filtrar por banco
-MIN_ORDENES_MES = 1000               # órdenes del último mes, según Binance
 MIN_USDT_DISPONIBLE = 1000           # volumen disponible en el anuncio
+# (sin filtro de cantidad de órdenes/mes)
 
 url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
 payload = {
@@ -42,19 +42,26 @@ def send_telegram(text):
 
 def pasa_filtros(item):
     adv = item["adv"]
-    advertiser = item["advertiser"]
 
     disponible = float(adv.get("surplusAmount", 0))
     if disponible < MIN_USDT_DISPONIBLE:
         return False
 
-    ordenes = advertiser.get("monthOrderCount", 0)
-    if ordenes < MIN_ORDENES_MES:
-        return False
-
     if BANCO_REQUERIDO:
-        bancos = [m.get("tradeMethodName", "") for m in adv.get("tradeMethods", [])]
-        if not any(BANCO_REQUERIDO.lower() in b.lower() for b in bancos):
+        encontrado = False
+        for m in adv.get("tradeMethods", []):
+            # Revisamos ambos campos posibles: el nombre visible del método
+            # de pago (tradeMethodName, ej. "Bank Transfer") y el banco
+            # específico si el anunciante lo detalló (payBank). Cuál de
+            # los dos trae el dato varía según el anuncio, así que
+            # aceptamos que aparezca en cualquiera de los dos.
+            nombre_metodo = (m.get("tradeMethodName") or "")
+            banco_especifico = (m.get("payBank") or "")
+            texto = (nombre_metodo + " " + banco_especifico).lower()
+            if BANCO_REQUERIDO.lower() in texto:
+                encontrado = True
+                break
+        if not encontrado:
             return False
 
     return True
@@ -69,7 +76,6 @@ def main():
         return
 
     # DEBUG: esto queda solo en los logs de Actions, no se manda a Telegram.
-    # Nos sirve para confirmar los nombres reales de los campos.
     print("Ejemplo del primer anuncio crudo:")
     print(data["data"][0] if data["data"] else "sin anuncios")
 
@@ -78,8 +84,7 @@ def main():
     if not coinciden:
         send_telegram(
             "🧪 Ningún anuncio cumple los filtros ahora mismo "
-            f"(banco={BANCO_REQUERIDO}, min órdenes/mes={MIN_ORDENES_MES}, "
-            f"min USDT disp.={MIN_USDT_DISPONIBLE})."
+            f"(banco={BANCO_REQUERIDO}, min USDT disp.={MIN_USDT_DISPONIBLE})."
         )
         return
 
