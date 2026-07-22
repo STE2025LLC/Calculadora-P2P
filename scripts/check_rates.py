@@ -153,21 +153,40 @@ def fetch_paralelo_binance_directo():
     if not data.get("success"):
         return None, None
 
-    precios_validos = []
+    candidatos = []
     for item in data.get("data", []):
         adv = item.get("adv", {})
-        if _anuncio_cumple_filtros(adv):
-            try:
-                precios_validos.append(float(adv["price"]))
-            except (TypeError, ValueError, KeyError):
-                continue
+        advertiser = item.get("advertiser", {})
 
-    if not precios_validos:
+        if not _anuncio_cumple_filtros(adv):
+            continue
+
+        # DEBUG temporal: para diagnosticar discrepancias entre lo que trae
+        # esta API y lo que se ve en la web. Esto queda solo en los logs de
+        # Actions, no se manda a Telegram. Se puede borrar este bloque una
+        # vez resuelto el diagnóstico.
+        print(
+            f"[debug] candidato: precio={adv.get('price')} "
+            f"anunciante={advertiser.get('nickName')} "
+            f"isTradable={adv.get('isTradable')} "
+            f"isBlocked={advertiser.get('isBlocked')} "
+            f"disponible={adv.get('surplusAmount')} "
+            f"minTrans={adv.get('minSingleTransAmount')} "
+            f"maxTrans={adv.get('maxSingleTransAmount')} "
+            f"monthOrderCount={advertiser.get('monthOrderCount')}"
+        )
+
+        try:
+            candidatos.append((float(adv["price"]), adv, advertiser))
+        except (TypeError, ValueError, KeyError):
+            continue
+
+    if not candidatos:
         return None, None
 
-    val = max(precios_validos)
-    if 5 < val < 30:
-        return val, f"Binance P2P directo (filtro: {BANCO_REQUERIDO}, min {MIN_USDT_DISPONIBLE} USDT)"
+    mejor_precio, mejor_adv, mejor_advertiser = max(candidatos, key=lambda c: c[0])
+    if 5 < mejor_precio < 30:
+        return mejor_precio, f"Binance P2P directo (filtro: {BANCO_REQUERIDO}, min {MIN_USDT_DISPONIBLE} USDT)"
 
     return None, None
 
