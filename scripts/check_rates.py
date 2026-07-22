@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Chequea el tipo de cambio oficial (BCB, vía bo.dolarapi.com) y el paralelo
-(Binance P2P vía criptoya.com, con dolarparalelobolivia.net como respaldo) y
-avisa por Telegram si:
+(Binance P2P DIRECTO, filtrado por método de pago Banco Ganadero y mínimo de
+USDT disponibles, sin pasar por criptoya) y avisa por Telegram si:
   - alguno cambió respecto a la última vez que se revisó, o
   - es la hora del resumen diario (una vez al día), que incluye mínimos y
     máximos de ayer, de esta semana, del mes actual y de los 3 meses
@@ -51,6 +51,16 @@ HISTORY_KEEP_DAYS = 100
 # decimales).
 COMPARE_DECIMALS = 2
 
+# --- Filtros para el paralelo (Binance P2P directo) ---
+# Método de pago requerido. Se revisa tanto el nombre visible del método de
+# pago (tradeMethodName, ej. "Bank Transfer") como el banco específico si el
+# anunciante lo detalló (payBank), porque cuál de los dos trae el dato varía
+# según el anuncio.
+BANCO_REQUERIDO = "Banco Ganadero"
+# Mínimo de USDT disponibles en el anuncio para considerarlo.
+MIN_USDT_DISPONIBLE = 1000
+# (sin filtro de cantidad de órdenes/mes, a propósito)
+
 BOLIVIA_TZ = timezone(timedelta(hours=-4))
 
 
@@ -87,27 +97,108 @@ def fetch_oficial():
     return None, None
 
 
+def _anuncio_cumple_filtros(adv):
+    """Aplica los filtros de banco y USDT disponible a un anuncio de Binance P2P."""
+    disponible = float(adv.get("surplusAmount", 0) or 0)
+    if disponible < MIN_USDT_DISPONIBLE:
+        return False
+
+    if BANCO_REQUERIDO:
+        encontrado = False
+        for m in adv.get("tradeMethods", []):
+            nombre_metodo = (m.get("tradeMethodName") or "")
+            banco_especifico = (m.get("payBank") or "")
+            texto = (nombre_metodo + " " + banco_especifico).lower()
+            if BANCO_REQUERIDO.lower() in texto:
+                encontrado = True
+                break
+        if not encontrado:
+            return False
+
+    return True
+
+
+def fetch_paralelo_binance_directo():
+    """Tipo de cambio paralelo, leído DIRECTO del endpoint (no oficial, no
+    documentado por Binance) que usa la propia web p2p.binance.com.
+
+    Se piden anuncios de venta de USDT/BOB, se filtran por los criterios de
+    arriba (banco + mínimo disponible), y se toma el MEJOR precio (el más
+    alto) entre los que cumplen -- porque estás vendiendo USDT y recibiendo
+    BOB, así que precio más alto = más bolivianos por tus dólares.
+
+    Devuelve (None, None) si la API falla o si ningún anuncio cumple los
+    filtros (en ese caso, quien llama a esta función debe recurrir al
+    respaldo).
+    """
+    url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
+    payload = {
+        "asset": "USDT",
+        "fiat": "BOB",
+        "tradeType": "SELL",
+        "page": 1,
+        "rows": 20,
+        "payTypes": [],
+        "publisherType": None,
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    }
+
+    r = requests.post(url, json=payload, headers=headers, timeout=15)
+    r.raise_for_status()
+    data = r.json()
+
+    if not data.get("success"):
+        return None, None
+
+    precios_validos = []
+    for item in data.get("data", []):
+        adv = item.get("adv", {})
+        if _anuncio_cumple_filtros(adv):
+            try:
+                precios_validos.append(float(adv["price"]))
+            except (TypeError, ValueError, KeyError):
+                continue
+
+    if not precios_validos:
+        return None, None
+
+    val = max(precios_validos)
+    if 5 < val < 30:
+        return val, f"Binance P2P directo (filtro: {BANCO_REQUERIDO}, min {MIN_USDT_DISPONIBLE} USDT)"
+
+    return None, None
+
+
 def fetch_paralelo():
     """Tipo de cambio paralelo.
 
-    Fuente principal: el endpoint específico de Binance P2P dentro de la API pública
-    de criptoya.com (misma fuente y mismo exchange que se ve en criptoya.com/bo).
-    Se usa el campo "bid" (columna "Vendés a" en criptoya.com/bo), que es el precio al
-    que vendés tus dólares/USDT y recibís bolivianos. Volumen de referencia: 500 USDT,
-    igual que en criptoya.com/bo. Esta es la misma fuente que usa index.html, para que
-    el bot de Telegram y la calculadora web siempre coincidan.
+    Fuente principal: Binance P2P DIRECTO (sin pasar por criptoya), aplicando
+    tus filtros de banco y volumen mínimo -- ver fetch_paralelo_binance_directo().
 
-    Respaldo: si esa API falla, se intenta leer (mejor esfuerzo) el HTML de
-    dolarparalelobolivia.net y dolarbluebolivia.click, sin proxy (a diferencia de la
-    versión en el navegador, aquí no hace falta por no aplicar CORS del lado del servidor).
+    Respaldo 1: si esa consulta falla o ningún anuncio cumple los filtros, se
+    usa el mismo dato de Binance P2P pero vía criptoya.com (sin tus filtros
+    específicos, solo el "bid" general con 500 USDT de referencia).
+
+    Respaldo 2: si también falla, se intenta leer (mejor esfuerzo) el HTML de
+    dolarparalelobolivia.net y dolarbluebolivia.click.
     """
+    try:
+        val, src = fetch_paralelo_binance_directo()
+        if val is not None:
+            return val, src
+    except Exception:
+        pass
+
     try:
         r = requests.get("https://criptoya.com/api/binancep2p/usdt/bob/500", timeout=15)
         r.raise_for_status()
         data = r.json()
         val = float(data["bid"])
         if 5 < val < 30:
-            return val, "criptoya.com/bo (Binance P2P)"
+            return val, "criptoya.com/bo (Binance P2P, respaldo sin filtros)"
     except Exception:
         pass
 
@@ -309,9 +400,6 @@ def main():
             messages.append("🧪 Prueba: no se pudo leer alguna de las dos cotizaciones ahora mismo.")
 
     # --- Detección de cambios ---
-    # Se compara redondeando a COMPARE_DECIMALS para no disparar alertas por
-    # diferencias de decimales que no se notan en la calculadora (que solo
-    # muestra 2 decimales).
     if (
         oficial is not None
         and state.get("oficial") is not None
@@ -337,13 +425,6 @@ def main():
         )
 
     # --- Resumen diario ---
-    # GitHub Actions NO garantiza que el cron corra exactamente cada 30 min:
-    # en repos con poco uso suele atrasar o saltarse ejecuciones (a veces por
-    # horas). Por eso, en vez de buscar una ventana exacta alrededor de la
-    # hora objetivo, se manda el resumen en la PRIMERA ejecución del día que
-    # ocurra a partir de la hora:minuto configurados. Como mucho llega un
-    # poco tarde según cuánto se demore GitHub ese día, pero nunca se lo
-    # salta.
     target_minutes = DAILY_SUMMARY_HOUR_BOLIVIA * 60 + DAILY_SUMMARY_MINUTE_BOLIVIA
     now_minutes = now_bo.hour * 60 + now_bo.minute
     is_summary_time = now_minutes >= target_minutes
