@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Chequea el tipo de cambio oficial (BCB, vía bo.dolarapi.com) y el paralelo
-(Binance P2P DIRECTO, filtrado por método de pago Banco Ganadero, mínimo de
-USDT disponibles, y límite de transacción realista, sin pasar por criptoya)
-y avisa por Telegram si:
+Chequea el tipo de cambio oficial (BCB, DIRECTO de bcb.gob.bo, con respaldo
+en bo.dolarapi.com) y el paralelo (Binance P2P DIRECTO, filtrado por método
+de pago Banco Ganadero, mínimo de USDT disponibles, y límite de transacción
+realista, sin pasar por criptoya) y avisa por Telegram si:
   - alguno cambió respecto a la última vez que se revisó, o
   - es la hora del resumen diario (una vez al día), que incluye mínimos y
     máximos de ayer, de esta semana, del mes actual y de los 3 meses
@@ -43,20 +43,8 @@ HISTORY_KEEP_DAYS = 100
 COMPARE_DECIMALS = 2
 
 # --- Filtros para el paralelo (Binance P2P directo) ---
-# Método de pago requerido. Se revisa tanto el nombre visible del método de
-# pago (tradeMethodName, ej. "Bank Transfer") como el banco específico si el
-# anunciante lo detalló (payBank), porque cuál de los dos trae el dato varía
-# según el anuncio.
 BANCO_REQUERIDO = "Banco Ganadero"
-# Mínimo de USDT disponibles EN TOTAL en el anuncio.
 MIN_USDT_DISPONIBLE = 1000
-# Mínimo de BOB permitido POR TRANSACCIÓN (maxSingleTransAmount). Sin esto,
-# se cuelan anuncios "señuelo" que muestran mucho volumen total disponible
-# pero limitan cada operación individual a montos ridículamente chicos
-# (ej. máximo 56 BOB por transacción), lo cual en la práctica los hace
-# inoperables para un monto real. La web de Binance ya descarta estos
-# anuncios automáticamente al filtrar con un importe normal; este filtro
-# imita ese comportamiento.
 MIN_MAX_TRANS_BOB = 1000
 # (sin filtro de cantidad de órdenes/mes, a propósito)
 
@@ -68,17 +56,14 @@ BOLIVIA_TZ = timezone(timedelta(hours=-4))
 # --------------------------------------------------------------------------
 
 def fetch_oficial():
-    """Tipo de cambio oficial, tomado del BCB vía bo.dolarapi.com (con fallback a bcb.gob.bo)."""
-    try:
-        r = requests.get("https://bo.dolarapi.com/v1/dolares/oficial", timeout=15)
-        r.raise_for_status()
-        data = r.json()
-        val = float(data.get("venta") or data.get("compra"))
-        if 3 < val < 30:
-            return val, "bo.dolarapi.com (dato oficial BCB)"
-    except Exception:
-        pass
+    """Tipo de cambio oficial, tomado DIRECTO de bcb.gob.bo (fuente original,
+    la más actualizada), con fallback a bo.dolarapi.com si el scraping falla.
 
+    Nota: bo.dolarapi.com refleja el mismo dato del BCB pero con retraso de
+    hasta varios días en algunas ocasiones, por eso ya no es la fuente
+    principal -- se dejó como respaldo por si el scraping directo del BCB
+    falla (por ejemplo si cambian el HTML de su portada).
+    """
     try:
         r = requests.get("https://www.bcb.gob.bo/", timeout=15, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
@@ -90,6 +75,16 @@ def fetch_oficial():
             val = float(m.group(1).replace(",", "."))
             if 3 < val < 30:
                 return val, "bcb.gob.bo"
+    except Exception:
+        pass
+
+    try:
+        r = requests.get("https://bo.dolarapi.com/v1/dolares/oficial", timeout=15)
+        r.raise_for_status()
+        data = r.json()
+        val = float(data.get("venta") or data.get("compra"))
+        if 3 < val < 30:
+            return val, "bo.dolarapi.com (respaldo, puede tener retraso)"
     except Exception:
         pass
 
