@@ -455,7 +455,7 @@
 
   <div class="note">
     <strong>¿Cómo funciona?</strong><br>
-    Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. La calculadora compara paralelo vs. oficial y te dice cuál te conviene y cuántos BOB de más obtienes con esa opción, marcando la tarjeta ganadora con ⭐. El tipo de cambio <strong>oficial</strong> (TCO) se lee primero de <strong>apibcb.cucu.bo</strong>, una API independiente que republica en JSON el dato publicado por el BCB (sin depender de un proxy CORS de terceros que podría cachear datos viejos); si falla, se intenta leer directo del HTML de la página de última cotización de <strong>bcb.gob.bo</strong> vía proxy público, y si eso también falla, se usa bo.dolarapi.com. Nota: el BCB publica el TCO una sola vez por día hábil (cerca de las 20:00, vigente al día siguiente), así que ninguna fuente puede mostrar cambios más rápido que eso. EUR/USD se lee de open.er-api.com. El <strong>paralelo</strong> se lee del precio "Vendés a" de Binance P2P (USDT/BOB) a través del endpoint específico de la API pública de criptoya.com — el mismo dato que ves en la tabla de <strong>criptoya.com/bo</strong>, con CORS habilitado y sin necesitar proxy; si esa API no responde, como respaldo se intenta leer el HTML de sitios de referencia a través de un proxy público, que puede fallar en cualquier momento. El chip <strong>EUR/USDT · Binance P2P</strong> muestra el mejor precio (el más bajo) al que se está comprando USDT con euros ahora mismo en Binance P2P, filtrando solo anuncios que aceptan <strong>Wise</strong> o <strong>Banco Santander</strong> y que <strong>no exigen tener BTC</strong> para poder operar con el anunciante; se lee directo del mismo endpoint que usa p2p.binance.com, a través de un proxy CORS público (puede fallar, en cuyo caso se usa como respaldo el precio general de criptoya.com, SIN esos filtros — el chip lo avisa si eso pasa). Si tienes un monto en euros cargado arriba, debajo del chip aparece a cuántos USDT equivale. Si alguno no se pudo leer, edítalo directamente en su casillero de arriba.
+    Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. La calculadora compara paralelo vs. oficial y te dice cuál te conviene y cuántos BOB de más obtienes con esa opción, marcando la tarjeta ganadora con ⭐. El tipo de cambio <strong>oficial</strong> (TCO) se lee primero de <strong>apibcb.cucu.bo</strong>, una API independiente que republica en JSON el dato publicado por el BCB (sin depender de un proxy CORS de terceros que podría cachear datos viejos); si falla, se intenta leer directo del HTML de la página de última cotización de <strong>bcb.gob.bo</strong> vía proxy público, y si eso también falla, se usa bo.dolarapi.com. Nota: el BCB publica el TCO una sola vez por día hábil (cerca de las 20:00, vigente al día siguiente), así que ninguna fuente puede mostrar cambios más rápido que eso. EUR/USD se lee de open.er-api.com. El <strong>paralelo</strong> se lee del precio "Vendés a" de Binance P2P (USDT/BOB) a través del endpoint específico de la API pública de criptoya.com — el mismo dato que ves en la tabla de <strong>criptoya.com/bo</strong>, con CORS habilitado y sin necesitar proxy; si esa API no responde, como respaldo se intenta leer el HTML de sitios de referencia a través de un proxy público, que puede fallar en cualquier momento. El chip <strong>EUR/USDT · Binance P2P</strong> muestra el mejor precio (el más bajo) al que se está comprando USDT con euros en Binance P2P, filtrando solo anuncios que aceptan <strong>Wise</strong> o <strong>Banco Santander</strong> y que <strong>no exigen tener BTC</strong> para poder operar con el anunciante. Ese filtrado lo hace el bot de Telegram (que corre server-side vía GitHub Actions cada 15 minutos, sin necesitar proxy porque no es un navegador) y lo deja guardado en el repo; esta página lo lee directo de ahí, mismo origen, sin proxy. Si ese dato no está disponible o quedó viejo, como respaldo se intenta la misma consulta directo desde el navegador vía un proxy CORS público (puede fallar), y si eso también falla, se usa el precio general de criptoya.com, SIN esos filtros — el chip avisa si eso pasa. Si tienes un monto en euros cargado arriba, debajo del chip aparece a cuántos USDT equivale. Si alguno no se pudo leer, edítalo directamente en su casillero de arriba.
   </div>
 </div>
 
@@ -595,20 +595,50 @@
     }
   }
 
+  // ESTADO DEL BOT (GitHub Actions) — el bot de Telegram (scripts/check_rates.py)
+  // corre server-side cada 15 min, así que le pega DIRECTO a Binance sin
+  // necesitar ningún proxy CORS (esa restricción solo aplica a llamadas
+  // hechas desde un navegador). Guarda el resultado ya filtrado en
+  // state/rates_state.json y lo comitea al repo. Como esta página se sirve
+  // con GitHub Pages desde el mismo repo, podemos leer ese archivo con un
+  // fetch relativo — mismo origen, sin proxy, sin CORS.
+  const BOT_STATE_MAX_AGE_MIN = 120; // si el archivo es más viejo que esto, se ignora
+
+  async function fetchBotState() {
+    const res = await fetch('state/rates_state.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('http ' + res.status);
+    const data = await res.json();
+    if (data.updated_at) {
+      const ageMin = (Date.now() - new Date(data.updated_at).getTime()) / 60000;
+      if (ageMin > BOT_STATE_MAX_AGE_MIN) {
+        throw new Error('dato del bot desactualizado (' + Math.round(ageMin) + ' min)');
+      }
+    }
+    return data;
+  }
+
+  function fmtHora(iso) {
+    try {
+      return new Date(iso).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
+  }
+
   // EUR/USDT (Binance P2P) — cuánto USDT te dan tus euros si compras USDT
   // directamente con EUR en Binance P2P, filtrando solo anuncios que:
   //  - acepten Wise o Banco Santander como método de pago, y
   //  - NO exijan tener una posición mínima de BTC para poder operar con
   //    el anunciante (campo buyerBtcPositionLimit de Binance).
   //
-  // FUENTE PRINCIPAL: se llama DIRECTO al mismo endpoint (no oficial) que
-  // usa p2p.binance.com, pasando por un proxy CORS público (corsproxy.io)
-  // porque Binance no habilita CORS para llamadas desde el navegador. Se
-  // aplican los filtros de arriba y se toma el precio más bajo entre los
-  // anuncios que cumplen. Este proxy es de terceros y puede fallar o
-  // dejar de funcionar en cualquier momento — por eso hay respaldo.
+  // FUENTE PRINCIPAL: el estado guardado por el bot (ver fetchBotState arriba)
+  // — ya viene filtrado y no depende de ningún proxy.
   //
-  // RESPALDO: si el proxy falla o ningún anuncio cumple los filtros, se
+  // RESPALDO 1: si el bot no tiene el dato (o está viejo), se llama DIRECTO
+  // al mismo endpoint (no oficial) que usa p2p.binance.com, pasando por un
+  // proxy CORS público (corsproxy.io) porque Binance no habilita CORS para
+  // llamadas desde el navegador. Este proxy es de terceros y puede fallar
+  // o dejar de funcionar en cualquier momento.
+  //
+  // RESPALDO 2: si el proxy falla o ningún anuncio cumple los filtros, se
   // usa el precio general (ask) de criptoya.com — el mismo agregador que
   // ya se usa para el paralelo, pero SIN los filtros de Wise/Santander/BTC.
   const EUR_MIN_USDT_DISPONIBLE = 300;
@@ -663,27 +693,42 @@
 
   async function fetchEurUsdtRate() {
     const srcTag = document.getElementById('eurusdt-src');
+
+    // Fuente principal: el estado que ya dejó el bot.
     try {
-      const val = await fetchEurUsdtDirectoFiltrado();
+      const state = await fetchBotState();
+      if (!state.eur_usdt) throw new Error('el bot todavía no tiene eur_usdt');
+      const val = parseFloat(state.eur_usdt);
+      if (!(val > 0.3 && val < 3)) throw new Error('valor fuera de rango: ' + val);
       document.getElementById('r_eur_usdt').value = val.toFixed(4);
       document.getElementById('dot-eurusdt').className = 'dot ok';
-      srcTag.textContent = 'Binance P2P directo · Wise/Santander, sin pedir BTC · mejor precio';
-      return 'Binance P2P directo (Wise/Santander, sin pedir BTC)';
-    } catch (err) {
+      const hora = state.updated_at ? ' · actualizado ' + fmtHora(state.updated_at) : '';
+      srcTag.textContent = 'Bot (GitHub Actions) · ' + (state.eur_usdt_src || 'Binance P2P filtrado') + hora;
+      return 'bot (GitHub Actions): ' + (state.eur_usdt_src || 'Binance P2P filtrado');
+    } catch (errBot) {
+      // Respaldo 1: llamada directa al navegador vía proxy público.
       try {
-        const res = await fetch('https://criptoya.com/api/binancep2p/usdt/eur/500');
-        if (!res.ok) throw new Error('http ' + res.status);
-        const data = await res.json();
-        const val = parseFloat(data.ask);
-        if (!(val > 0.3 && val < 3)) throw new Error('valor fuera de rango: ' + val);
+        const val = await fetchEurUsdtDirectoFiltrado();
         document.getElementById('r_eur_usdt').value = val.toFixed(4);
         document.getElementById('dot-eurusdt').className = 'dot ok';
-        srcTag.textContent = '⚠️ Respaldo criptoya.com — SIN filtrar por Wise/Santander/BTC';
-        return 'criptoya.com (respaldo, SIN filtrar por Wise/Santander/BTC)';
-      } catch (err2) {
-        document.getElementById('dot-eurusdt').className = 'dot manual';
-        srcTag.textContent = 'No se pudo leer automáticamente — ingrésalo a mano';
-        return null;
+        srcTag.textContent = 'Binance P2P directo (vía proxy) · Wise/Santander, sin pedir BTC';
+        return 'Binance P2P directo vía proxy (Wise/Santander, sin pedir BTC)';
+      } catch (err) {
+        try {
+          const res = await fetch('https://criptoya.com/api/binancep2p/usdt/eur/500');
+          if (!res.ok) throw new Error('http ' + res.status);
+          const data = await res.json();
+          const val = parseFloat(data.ask);
+          if (!(val > 0.3 && val < 3)) throw new Error('valor fuera de rango: ' + val);
+          document.getElementById('r_eur_usdt').value = val.toFixed(4);
+          document.getElementById('dot-eurusdt').className = 'dot ok';
+          srcTag.textContent = '⚠️ Respaldo criptoya.com — SIN filtrar por Wise/Santander/BTC';
+          return 'criptoya.com (respaldo, SIN filtrar por Wise/Santander/BTC)';
+        } catch (err2) {
+          document.getElementById('dot-eurusdt').className = 'dot manual';
+          srcTag.textContent = 'No se pudo leer automáticamente — ingrésalo a mano';
+          return null;
+        }
       }
     }
   }
@@ -895,3 +940,4 @@
 </script>
 </body>
 </html>
+
