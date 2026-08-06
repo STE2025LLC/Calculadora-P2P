@@ -48,6 +48,11 @@ MIN_USDT_DISPONIBLE = 1000
 MIN_MAX_TRANS_BOB = 1000
 # (sin filtro de cantidad de órdenes/mes, a propósito)
 
+# --- Filtros para EUR/USDT (Binance P2P directo, comprando USDT con EUR) ---
+EUR_MIN_USDT_DISPONIBLE = 300
+EUR_MIN_MAX_TRANS_EUR = 100
+EUR_PAY_METHODS = ["wise", "santander"]
+
 BOLIVIA_TZ = timezone(timedelta(hours=-4))
 
 
@@ -56,25 +61,35 @@ BOLIVIA_TZ = timezone(timedelta(hours=-4))
 # --------------------------------------------------------------------------
 
 def fetch_oficial():
-    """Tipo de cambio oficial, tomado DIRECTO de bcb.gob.bo (fuente original,
-    la más actualizada), con fallback a bo.dolarapi.com si el scraping falla.
+    """Tipo de cambio oficial, tomado DIRECTO de la página del BCB que
+    publica la última cotización del TCO (tco_reporte_ultima_cotizacion.php),
+    con fallback a bo.dolarapi.com si el scraping falla.
+
+    OJO: la portada de bcb.gob.bo (www.bcb.gob.bo) es un portal de noticias
+    y NO publica ahí el TCO del día -- por eso una versión anterior de esta
+    función (que scrapeaba la portada) terminaba guardando números que no
+    correspondían al TCO vigente (así quedó "12.02" pisado en
+    state/rates_state.json). El TCO diario vive en esta página específica.
 
     Nota: bo.dolarapi.com refleja el mismo dato del BCB pero con retraso de
     hasta varios días en algunas ocasiones, por eso ya no es la fuente
     principal -- se dejó como respaldo por si el scraping directo del BCB
-    falla (por ejemplo si cambian el HTML de su portada).
+    falla (por ejemplo si cambian el HTML de la página).
     """
     try:
-        r = requests.get("https://www.bcb.gob.bo/", timeout=15, headers={"User-Agent": "Mozilla/5.0"})
+        r = requests.get(
+            "https://www.bcb.gob.bo/tco_reporte_ultima_cotizacion.php",
+            timeout=15, headers={"User-Agent": "Mozilla/5.0"},
+        )
         r.raise_for_status()
         html = r.text
-        block_match = re.search(r"Tipo de cambio oficial[\s\S]{0,600}", html, re.IGNORECASE)
+        block_match = re.search(r"[Úú]ltima cotizaci[oó]n[\s\S]{0,200}", html, re.IGNORECASE)
         scope = block_match.group(0) if block_match else html
         m = re.search(r"(\d{1,2}[.,]\d{2})", scope)
         if m:
             val = float(m.group(1).replace(",", "."))
             if 3 < val < 30:
-                return val, "bcb.gob.bo"
+                return val, "bcb.gob.bo (última cotización)"
     except Exception:
         pass
 
@@ -234,6 +249,100 @@ def fetch_paralelo():
     return None, None
 
 
+def _eur_anuncio_cumple_filtros(adv):
+    """Aplica los mismos filtros que el chip EUR/USDT de index.html: banco
+    (Wise o Santander) y que no exija posición mínima de BTC."""
+    disponible = float(adv.get("surplusAmount", 0) or 0)
+    if disponible < EUR_MIN_USDT_DISPONIBLE:
+        return False
+
+    max_trans = float(adv.get("maxSingleTransAmount", 0) or 0)
+    if max_trans < EUR_MIN_MAX_TRANS_EUR:
+        return False
+
+    btc_req = float(adv.get("buyerBtcPositionLimit", 0) or 0)
+    if btc_req > 0:
+        return False
+
+    for m in adv.get("tradeMethods", []):
+        nombre_metodo = (m.get("tradeMethodName") or "")
+        banco_especifico = (m.get("payBank") or "")
+        texto = (nombre_metodo + " " + banco_especifico).lower()
+        if any(pm in texto for pm in EUR_PAY_METHODS):
+            return True
+
+    return False
+
+
+def fetch_eur_usdt_binance_directo():
+    """Mejor precio (el más bajo) al que se compra USDT con EUR en Binance
+    P2P, filtrando solo anuncios que aceptan Wise o Santander y que no
+    exigen tener BTC para poder operar con el anunciante."""
+    url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
+    payload = {
+        "asset": "USDT",
+        "fiat": "EUR",
+        "tradeType": "BUY",
+        "page": 1,
+        "rows": 20,
+        "payTypes": [],
+        "publisherType": None,
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    }
+
+    r = requests.post(url, json=payload, headers=headers, timeout=15)
+    r.raise_for_status()
+    data = r.json()
+
+    if not data.get("success"):
+        return None, None
+
+    candidatos = []
+    for item in data.get("data", []):
+        adv = item.get("adv", {})
+        if not _eur_anuncio_cumple_filtros(adv):
+            continue
+        try:
+            candidatos.append(float(adv["price"]))
+        except (TypeError, ValueError, KeyError):
+            continue
+
+    if not candidatos:
+        return None, None
+
+    mejor = min(candidatos)
+    if 0.3 < mejor < 3:
+        return mejor, "Binance P2P directo (Wise/Santander, sin pedir BTC)"
+
+    return None, None
+
+
+def fetch_eur_usdt():
+    """EUR/USDT filtrado (fuente principal), con respaldo en criptoya.com
+    SIN esos filtros si Binance falla o ningún anuncio cumple."""
+    try:
+        val, src = fetch_eur_usdt_binance_directo()
+        if val is not None:
+            return val, src
+    except Exception:
+        pass
+
+    try:
+        r = requests.get("https://criptoya.com/api/binancep2p/usdt/eur/500", timeout=15)
+        r.raise_for_status()
+        data = r.json()
+        val = float(data["ask"])
+        if 0.3 < val < 3:
+            return val, "criptoya.com (respaldo, SIN filtrar por Wise/Santander/BTC)"
+    except Exception:
+        pass
+
+    return None, None
+
+
 # --------------------------------------------------------------------------
 # Estado (último valor visto)
 # --------------------------------------------------------------------------
@@ -242,7 +351,12 @@ def load_state():
     if os.path.exists(STATE_PATH):
         with open(STATE_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
-    return {"oficial": None, "paralelo": None, "last_daily_summary_date": None}
+    return {
+        "oficial": None,
+        "paralelo": None,
+        "eur_usdt": None,
+        "last_daily_summary_date": None,
+    }
 
 
 def save_state(state):
@@ -382,6 +496,7 @@ def main():
 
     oficial, oficial_src = fetch_oficial()
     paralelo, paralelo_src = fetch_paralelo()
+    eur_usdt, eur_usdt_src = fetch_eur_usdt()
 
     now_bo = datetime.now(BOLIVIA_TZ)
     today_str = now_bo.strftime("%Y-%m-%d")
@@ -444,8 +559,16 @@ def main():
 
     if oficial is not None:
         state["oficial"] = oficial
+        state["oficial_src"] = oficial_src
     if paralelo is not None:
         state["paralelo"] = paralelo
+        state["paralelo_src"] = paralelo_src
+    if eur_usdt is not None:
+        state["eur_usdt"] = eur_usdt
+        state["eur_usdt_src"] = eur_usdt_src
+    # index.html usa esto para saber qué tan fresco es el dato y descartarlo
+    # si por algún motivo el workflow dejó de correr hace mucho tiempo.
+    state["updated_at"] = now_bo.isoformat()
 
     save_state(state)
     save_history(history)
@@ -457,3 +580,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
+
