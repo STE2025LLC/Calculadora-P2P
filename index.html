@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -136,6 +137,17 @@
     color: var(--muted);
     margin-top: 3px;
     letter-spacing: 0.02em;
+  }
+
+  .rate-chip.wide {
+    grid-column: 1 / -1;
+  }
+  .rate-chip.wide label { color: var(--eur); }
+  .rate-chip.wide .hint {
+    font-size: 10.5px;
+    color: var(--eur);
+    font-weight: 600;
+    margin-top: 4px;
   }
 
   .rate-chip-slim {
@@ -387,7 +399,17 @@
         <input type="number" id="r_oficial" step="0.01" inputmode="decimal" oninput="onManualRateEdit('oficial'); calc();">
         <span class="unit">BOB</span>
       </div>
-      <span class="src-tag">bcb.gob.bo (o respaldo con mismo dato)</span>
+      <span class="src-tag">apibcb.cucu.bo · datos del BCB (o respaldo con mismo dato)</span>
+    </div>
+    <div class="rate-chip wide">
+      <label><span class="dot pending" id="dot-eurusdt"></span> EUR/USDT · Binance P2P (Wise/Santander, sin pedir BTC)</label>
+      <div class="rate-input-row">
+        <span class="unit">1 USDT =</span>
+        <input type="number" id="r_eur_usdt" step="0.0001" inputmode="decimal" oninput="onManualRateEdit('eurusdt'); calc();">
+        <span class="unit">€</span>
+      </div>
+      <span class="src-tag" id="eurusdt-src">Binance P2P directo · mejor precio (más bajo = más USDT)</span>
+      <div class="hint" id="eurusdt-hint"></div>
     </div>
     <div class="rate-chip-slim">
       <span class="dot pending" id="dot-eur"></span>
@@ -433,7 +455,7 @@
 
   <div class="note">
     <strong>¿Cómo funciona?</strong><br>
-    Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. La calculadora compara paralelo vs. oficial y te dice cuál te conviene y cuántos BOB de más obtienes con esa opción, marcando la tarjeta ganadora con ⭐. El tipo de cambio <strong>oficial</strong> se intenta leer primero directamente de la portada de <strong>bcb.gob.bo</strong> (Banco Central de Bolivia); si esa lectura falla (el número se pinta con JavaScript y a veces no está disponible en una lectura simple del HTML), se usa como respaldo bo.dolarapi.com, que toma el mismo Tipo de Cambio Oficial publicado por el BCB. EUR/USD se lee de open.er-api.com. El <strong>paralelo</strong> se lee del precio "Vendés a" de Binance P2P (USDT/BOB) a través del endpoint específico de la API pública de criptoya.com — el mismo dato que ves en la tabla de <strong>criptoya.com/bo</strong>, con CORS habilitado y sin necesitar proxy; si esa API no responde, como respaldo se intenta leer el HTML de sitios de referencia a través de un proxy público, que puede fallar en cualquier momento. Si alguno no se pudo leer, edítalo directamente en su casillero de arriba.
+    Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. La calculadora compara paralelo vs. oficial y te dice cuál te conviene y cuántos BOB de más obtienes con esa opción, marcando la tarjeta ganadora con ⭐. El tipo de cambio <strong>oficial</strong> (TCO) se lee primero de <strong>apibcb.cucu.bo</strong>, una API independiente que republica en JSON el dato publicado por el BCB (sin depender de un proxy CORS de terceros que podría cachear datos viejos); si falla, se intenta leer directo del HTML de la página de última cotización de <strong>bcb.gob.bo</strong> vía proxy público, y si eso también falla, se usa bo.dolarapi.com. Nota: el BCB publica el TCO una sola vez por día hábil (cerca de las 20:00, vigente al día siguiente), así que ninguna fuente puede mostrar cambios más rápido que eso. EUR/USD se lee de open.er-api.com. El <strong>paralelo</strong> se lee del precio "Vendés a" de Binance P2P (USDT/BOB) a través del endpoint específico de la API pública de criptoya.com — el mismo dato que ves en la tabla de <strong>criptoya.com/bo</strong>, con CORS habilitado y sin necesitar proxy; si esa API no responde, como respaldo se intenta leer el HTML de sitios de referencia a través de un proxy público, que puede fallar en cualquier momento. El chip <strong>EUR/USDT · Binance P2P</strong> muestra el mejor precio (el más bajo) al que se está comprando USDT con euros ahora mismo en Binance P2P, filtrando solo anuncios que aceptan <strong>Wise</strong> o <strong>Banco Santander</strong> y que <strong>no exigen tener BTC</strong> para poder operar con el anunciante; se lee directo del mismo endpoint que usa p2p.binance.com, a través de un proxy CORS público (puede fallar, en cuyo caso se usa como respaldo el precio general de criptoya.com, SIN esos filtros — el chip lo avisa si eso pasa). Si tienes un monto en euros cargado arriba, debajo del chip aparece a cuántos USDT equivale. Si alguno no se pudo leer, edítalo directamente en su casillero de arriba.
   </div>
 </div>
 
@@ -482,6 +504,7 @@
   }
 
   function calc() {
+    updateEurUsdtHint();
     const usd = parseFloat(document.getElementById('amount_usd').value);
     const { paralelo, oficial } = getRates();
     const container = document.getElementById('results');
@@ -572,27 +595,148 @@
     }
   }
 
-  // Oficial — FUENTE PRINCIPAL: bo.dolarapi.com, una API pública que toma el mismo
-  // Tipo de Cambio Oficial publicado por el BCB, pero lo entrega ya en JSON con CORS
-  // habilitado — sin proxy, rápido y confiable.
+  // EUR/USDT (Binance P2P) — cuánto USDT te dan tus euros si compras USDT
+  // directamente con EUR en Binance P2P, filtrando solo anuncios que:
+  //  - acepten Wise o Banco Santander como método de pago, y
+  //  - NO exijan tener una posición mínima de BTC para poder operar con
+  //    el anunciante (campo buyerBtcPositionLimit de Binance).
   //
-  // Oficial — RESPALDO: si esa API falla, se intenta leer directamente la portada de
-  // bcb.gob.bo (Banco Central de Bolivia), sección "Tipo de cambio oficial · Bolivianos
-  // por Dólar Estadounidense", pasando por un proxy público (allorigins) porque el sitio
-  // del BCB no habilita CORS. Este camino es más lento y menos confiable (el proxy
-  // gratuito puede tardar varios segundos en responder o fallar, y el número a veces se
-  // pinta con JavaScript y no aparece en una lectura simple del HTML) — por eso quedó
-  // como plan B en vez de intentarse primero.
+  // FUENTE PRINCIPAL: se llama DIRECTO al mismo endpoint (no oficial) que
+  // usa p2p.binance.com, pasando por un proxy CORS público (corsproxy.io)
+  // porque Binance no habilita CORS para llamadas desde el navegador. Se
+  // aplican los filtros de arriba y se toma el precio más bajo entre los
+  // anuncios que cumplen. Este proxy es de terceros y puede fallar o
+  // dejar de funcionar en cualquier momento — por eso hay respaldo.
+  //
+  // RESPALDO: si el proxy falla o ningún anuncio cumple los filtros, se
+  // usa el precio general (ask) de criptoya.com — el mismo agregador que
+  // ya se usa para el paralelo, pero SIN los filtros de Wise/Santander/BTC.
+  const EUR_MIN_USDT_DISPONIBLE = 300;
+  const EUR_MIN_MAX_TRANS = 100;
+  const EUR_PAY_METHODS = ['wise', 'santander'];
+
+  function eurAdCumpleFiltros(adv) {
+    const disponible = parseFloat(adv.surplusAmount || 0);
+    if (disponible < EUR_MIN_USDT_DISPONIBLE) return false;
+
+    const maxTrans = parseFloat(adv.maxSingleTransAmount || 0);
+    if (maxTrans < EUR_MIN_MAX_TRANS) return false;
+
+    const btcReq = parseFloat(adv.buyerBtcPositionLimit || 0);
+    if (btcReq > 0) return false;
+
+    const metodos = adv.tradeMethods || [];
+    return metodos.some(m => {
+      const texto = ((m.tradeMethodName || '') + ' ' + (m.payBank || '')).toLowerCase();
+      return EUR_PAY_METHODS.some(pm => texto.includes(pm));
+    });
+  }
+
+  async function fetchEurUsdtDirectoFiltrado() {
+    const target = 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search';
+    const proxied = 'https://corsproxy.io/?url=' + encodeURIComponent(target);
+    const res = await fetch(proxied, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        asset: 'USDT', fiat: 'EUR', tradeType: 'BUY',
+        page: 1, rows: 20, payTypes: [], publisherType: null
+      })
+    });
+    if (!res.ok) throw new Error('http ' + res.status);
+    const data = await res.json();
+    if (!data.success) throw new Error('binance api error');
+
+    const candidatos = [];
+    for (const item of (data.data || [])) {
+      const adv = item.adv || {};
+      if (!eurAdCumpleFiltros(adv)) continue;
+      const price = parseFloat(adv.price);
+      if (!isNaN(price)) candidatos.push(price);
+    }
+    if (!candidatos.length) throw new Error('ningún anuncio cumple los filtros');
+
+    const mejor = Math.min(...candidatos);
+    if (!(mejor > 0.3 && mejor < 3)) throw new Error('valor fuera de rango: ' + mejor);
+    return mejor;
+  }
+
+  async function fetchEurUsdtRate() {
+    const srcTag = document.getElementById('eurusdt-src');
+    try {
+      const val = await fetchEurUsdtDirectoFiltrado();
+      document.getElementById('r_eur_usdt').value = val.toFixed(4);
+      document.getElementById('dot-eurusdt').className = 'dot ok';
+      srcTag.textContent = 'Binance P2P directo · Wise/Santander, sin pedir BTC · mejor precio';
+      return 'Binance P2P directo (Wise/Santander, sin pedir BTC)';
+    } catch (err) {
+      try {
+        const res = await fetch('https://criptoya.com/api/binancep2p/usdt/eur/500');
+        if (!res.ok) throw new Error('http ' + res.status);
+        const data = await res.json();
+        const val = parseFloat(data.ask);
+        if (!(val > 0.3 && val < 3)) throw new Error('valor fuera de rango: ' + val);
+        document.getElementById('r_eur_usdt').value = val.toFixed(4);
+        document.getElementById('dot-eurusdt').className = 'dot ok';
+        srcTag.textContent = '⚠️ Respaldo criptoya.com — SIN filtrar por Wise/Santander/BTC';
+        return 'criptoya.com (respaldo, SIN filtrar por Wise/Santander/BTC)';
+      } catch (err2) {
+        document.getElementById('dot-eurusdt').className = 'dot manual';
+        srcTag.textContent = 'No se pudo leer automáticamente — ingrésalo a mano';
+        return null;
+      }
+    }
+  }
+
+  function updateEurUsdtHint() {
+    const eurUsdt = parseFloat(document.getElementById('r_eur_usdt').value);
+    const eur = parseFloat(document.getElementById('amount_eur').value);
+    const hint = document.getElementById('eurusdt-hint');
+    if (eurUsdt > 0 && eur > 0) {
+      hint.textContent = '≈ ' + fmt(eur / eurUsdt) + ' USDT con tus € ' + fmt(eur);
+    } else {
+      hint.textContent = '';
+    }
+  }
+
+  // Oficial — FUENTE PRINCIPAL: apibcb.cucu.bo es una API independiente que
+  // republica el TCO del BCB en JSON, con CORS habilitado (pensada para
+  // consumirse directo desde el navegador, sin proxy de terceros). Al no
+  // depender de un proxy CORS público gratuito (que puede cachear resultados
+  // viejos por horas o días sin avisar), es la fuente más confiable para no
+  // quedarse pegado con un valor desactualizado. Trae también "fecha"
+  // (vigencia) para saber qué tan fresco es el dato.
+  //
+  // Importante: el BCB mismo NO publica el TCO en tiempo real durante el
+  // día — lo calcula con el promedio ponderado de las operaciones del día
+  // y lo publica una sola vez, cerca de las 20:00, para regir el día hábil
+  // siguiente. "Instantáneo" en la práctica significa "apenas el BCB lo
+  // publique", no segundo a segundo.
+  async function fetchOficialCucuApi() {
+    const res = await fetch('https://apibcb.cucu.bo/api/v1/tc/oficial');
+    if (!res.ok) throw new Error('http ' + res.status);
+    const data = await res.json();
+    const tco = data.tc_oficial || {};
+    const val = parseFloat(tco.compra ?? tco.base ?? tco.valor);
+    if (!(val > 3 && val < 30)) throw new Error('valor fuera de rango: ' + val);
+    return { val, fecha: tco.fecha };
+  }
+
+  // Oficial — RESPALDO 1: se lee DIRECTO de la página específica del BCB que
+  // publica la última cotización del TCO (tco_reporte_ultima_cotizacion.php),
+  // pasando por un proxy público (allorigins) porque el sitio del BCB no
+  // habilita CORS. Es la fuente oficial en sí misma, pero depende de ese
+  // proxy gratuito, que puede tardar, fallar, o devolver una copia en caché.
   async function fetchOficialBCBPortada() {
-    const proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.bcb.gob.bo/');
+    const proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.bcb.gob.bo/tco_reporte_ultima_cotizacion.php');
     const res = await fetch(proxied);
     if (!res.ok) throw new Error('http ' + res.status);
     const html = await res.text();
 
-    // Se busca el bloque "Tipo de cambio oficial" / "Bolivianos por Dólar
-    // Estadounidense" y se toma el primer número con 2 decimales que aparece
-    // después (formato boliviano: coma decimal, ej. "10,70").
-    const block = html.match(/Tipo de cambio oficial[\s\S]{0,600}/i);
+    // Se busca puntualmente el bloque "Última cotización" y se toma el primer
+    // número con 2 decimales que aparece después (formato boliviano: coma
+    // decimal, ej. "12,08").
+    const block = html.match(/[Úú]ltima cotizaci[oó]n[\s\S]{0,200}/i);
     const scope = block ? block[0] : html;
     const match = scope.match(/(\d{1,2}[.,]\d{2})/);
     if (!match) throw new Error('no se encontró el valor en el HTML');
@@ -602,6 +746,8 @@
     return val;
   }
 
+  // Oficial — RESPALDO 2: bo.dolarapi.com, que toma el mismo dato del BCB
+  // pero puede tardar más en reflejar cambios que las dos fuentes de arriba.
   async function fetchOficialDolarApi() {
     const res = await fetch('https://bo.dolarapi.com/v1/dolares/oficial');
     if (!res.ok) throw new Error('http ' + res.status);
@@ -613,22 +759,33 @@
 
   async function fetchOficialBCB() {
     try {
-      const val = await fetchOficialDolarApi();
+      const { val, fecha } = await fetchOficialCucuApi();
       document.getElementById('r_oficial').value = val.toFixed(2);
       document.getElementById('dot-oficial').className = 'dot ok';
-      return 'bo.dolarapi.com (dato oficial BCB)';
-    } catch (err1) {
+      return 'apibcb.cucu.bo' + (fecha ? ` (vigente ${fecha})` : '');
+    } catch (errCucu) {
       try {
         const val = await fetchOficialBCBPortada();
         document.getElementById('r_oficial').value = val.toFixed(2);
         document.getElementById('dot-oficial').className = 'dot ok';
-        return 'bcb.gob.bo';
-      } catch (err2) {
-        document.getElementById('dot-oficial').className = 'dot manual';
-        return null;
+        return 'bcb.gob.bo (directo)';
+      } catch (err1) {
+        try {
+          const val = await fetchOficialDolarApi();
+          document.getElementById('r_oficial').value = val.toFixed(2);
+          document.getElementById('dot-oficial').className = 'dot ok';
+          return 'bo.dolarapi.com (respaldo, puede tener retraso)';
+        } catch (err2) {
+          document.getElementById('dot-oficial').className = 'dot manual';
+          return null;
+        }
       }
     }
   }
+
+  // Nota: bo.dolarapi.com a veces tarda en reflejar el TCO del día (puede
+  // quedar un día o más atrás respecto a bcb.gob.bo/tco_reporte_ultima_cotizacion.php).
+  // Por eso esta función lo usa solo como respaldo, nunca como fuente principal.
 
   // Paralelo — FUENTE PRINCIPAL: el endpoint específico de Binance P2P dentro de la API
   // pública de criptoya.com (la misma fuente y el mismo exchange que se ve en
@@ -711,10 +868,11 @@
     document.querySelectorAll('.dot').forEach(d => d.className = 'dot pending');
     meta.textContent = 'Consultando fuentes en vivo…';
 
-    const [eurOk, oficialSource, paraleloSource] = await Promise.all([
+    const [eurOk, oficialSource, paraleloSource, eurUsdtSource] = await Promise.all([
       fetchEurRate(),
       fetchOficialBCB(),
-      fetchParalelo()
+      fetchParalelo(),
+      fetchEurUsdtRate()
     ]);
 
     const now = new Date().toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
@@ -724,6 +882,7 @@
     msg += eurOk ? 'EUR/USD: open.er-api.com ✓. ' : 'EUR/USD: no se pudo leer, ingrésalo a mano. ';
     msg += oficialSource ? ('Oficial: leído de ' + oficialSource + ' ✓. ') : 'Oficial: no se pudo leer automáticamente, ingrésalo a mano (revisa <a href="https://www.bcb.gob.bo/" target="_blank" rel="noopener">bcb.gob.bo</a>). ';
     msg += paraleloOk ? ('Paralelo: leído automáticamente de ' + paraleloSource + ' ✓.') : 'Paralelo: no se pudo leer automáticamente — revisa <a href="https://dolarparalelobolivia.net/" target="_blank" rel="noopener">dolarparalelobolivia.net</a> o <a href="https://www.dolarbluebolivia.click/" target="_blank" rel="noopener">dolarbluebolivia.click</a> y corrígelo arriba.';
+    msg += eurUsdtSource ? (' EUR/USDT: leído de ' + eurUsdtSource + ' ✓.') : ' EUR/USDT: no se pudo leer, ingrésalo a mano.';
     meta.innerHTML = msg;
 
     btn.disabled = false;
