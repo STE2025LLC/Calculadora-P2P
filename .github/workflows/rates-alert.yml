@@ -10,6 +10,10 @@ on:
         description: "Mandar un mensaje de prueba ahora, sin esperar un cambio real"
         type: boolean
         default: false
+      send_chart:
+        description: "Mandar ahora la gráfica de evolución (usando el historial ya guardado)"
+        type: boolean
+        default: false
 
 jobs:
   check-rates:
@@ -26,13 +30,14 @@ jobs:
           python-version: "3.12"
 
       - name: Instalar dependencias
-        run: pip install requests
+        run: pip install requests matplotlib
 
       - name: Revisar tipos de cambio y avisar por Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TEST_MODE: ${{ github.event.inputs.test_mode }}
+          SEND_CHART: ${{ github.event.inputs.send_chart }}
         run: python scripts/check_rates.py
 
       - name: Guardar el estado actualizado en el repo
