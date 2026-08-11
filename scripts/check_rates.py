@@ -20,6 +20,7 @@ entre ejecuciones.
 """
 
 import csv
+import io
 import json
 import os
 import re
@@ -27,6 +28,10 @@ import sys
 from datetime import datetime, timezone, timedelta
 
 import requests
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 STATE_PATH = os.path.join(BASE_DIR, "state", "rates_state.json")
@@ -41,6 +46,14 @@ DAILY_SUMMARY_MINUTE_BOLIVIA = 30
 HISTORY_KEEP_DAYS = 100
 
 COMPARE_DECIMALS = 2
+
+# Rangos de la gráfica que manda el bot (días, etiqueta).
+CHART_RANGES = [
+    (14, "2 semanas"),
+    (30, "1 mes"),
+    (60, "2 meses"),
+    (90, "3 meses"),
+]
 
 # --- Filtros para el paralelo (Binance P2P directo) ---
 BANCO_REQUERIDO = "Banco Ganadero"
@@ -433,6 +446,100 @@ def send_telegram(text):
     resp.raise_for_status()
 
 
+def send_telegram_photo(photo_bytes, caption=""):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+    resp = requests.post(
+        url,
+        data={
+            "chat_id": TELEGRAM_CHAT_ID,
+            "caption": caption,
+            "parse_mode": "HTML",
+        },
+        files={"photo": ("evolucion.png", photo_bytes, "image/png")},
+        timeout=30,
+    )
+    resp.raise_for_status()
+
+
+def send_telegram_photo_album(photos):
+    """Manda varias fotos juntas como un álbum (sendMediaGroup).
+    `photos` es una lista de tuplas (bytes_png, caption)."""
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMediaGroup"
+
+    media = []
+    files = {}
+    for i, (photo_bytes, caption) in enumerate(photos):
+        key = f"photo{i}"
+        files[key] = (f"{key}.png", photo_bytes, "image/png")
+        item = {"type": "photo", "media": f"attach://{key}"}
+        if caption:
+            item["caption"] = caption
+            item["parse_mode"] = "HTML"
+        media.append(item)
+
+    resp = requests.post(
+        url,
+        data={"chat_id": TELEGRAM_CHAT_ID, "media": json.dumps(media)},
+        files=files,
+        timeout=60,
+    )
+    resp.raise_for_status()
+
+
+# --------------------------------------------------------------------------
+# Gráfica de evolución (a partir del historial ya guardado)
+# --------------------------------------------------------------------------
+
+def build_chart_png(history, now_bo, days):
+    """Genera un PNG (bytes) con la evolución de Oficial y Paralelo en los
+    últimos `days` días, a partir de las filas ya guardadas en
+    state/history.csv. Devuelve None si no hay datos suficientes."""
+    cutoff = now_bo - timedelta(days=days)
+    rows = sorted(
+        (r for r in history if r["dt"] >= cutoff),
+        key=lambda r: r["dt"],
+    )
+    if len(rows) < 2:
+        return None
+
+    fechas_of = [r["dt"] for r in rows if r["oficial"] is not None]
+    valores_of = [r["oficial"] for r in rows if r["oficial"] is not None]
+    fechas_pa = [r["dt"] for r in rows if r["paralelo"] is not None]
+    valores_pa = [r["paralelo"] for r in rows if r["paralelo"] is not None]
+
+    fig, ax = plt.subplots(figsize=(9, 5), dpi=150)
+    if fechas_of:
+        ax.plot(fechas_of, valores_of, label="Oficial", color="#2e7d32", linewidth=1.6)
+    if fechas_pa:
+        ax.plot(fechas_pa, valores_pa, label="Paralelo", color="#1565c0", linewidth=1.6)
+
+    ax.set_title(f"Evolución BOB/USD · últimos {days} días")
+    ax.set_ylabel("BOB por USD")
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
+    fig.autofmt_xdate()
+    fig.tight_layout()
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png")
+    plt.close(fig)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+def build_chart_album(history, now_bo, ranges=CHART_RANGES):
+    """Genera una gráfica por cada rango de CHART_RANGES y devuelve la lista
+    de (bytes_png, caption) lista para mandar como álbum. Se saltea los
+    rangos sin datos suficientes."""
+    photos = []
+    for days, label in ranges:
+        png = build_chart_png(history, now_bo, days=days)
+        if png:
+            photos.append((png, f"📈 <b>Evolución BOB/USD · últimos {label}</b>"))
+    return photos
+
+
 def fmt(v):
     return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
@@ -517,6 +624,8 @@ def main():
         else:
             messages.append("🧪 Prueba: no se pudo leer alguna de las dos cotizaciones ahora mismo.")
 
+    hubo_cambio_precio = False
+
     if (
         oficial is not None
         and state.get("oficial") is not None
@@ -528,6 +637,7 @@ def main():
             f"{fmt(state['oficial'])} → <b>{fmt(oficial)}</b> BOB/USD\n"
             f"Fuente: {oficial_src}"
         )
+        hubo_cambio_precio = True
 
     if (
         paralelo is not None
@@ -540,21 +650,36 @@ def main():
             f"{fmt(state['paralelo'])} → <b>{fmt(paralelo)}</b> BOB/USD\n"
             f"Fuente: {paralelo_src}"
         )
+        hubo_cambio_precio = True
 
     target_minutes = DAILY_SUMMARY_HOUR_BOLIVIA * 60 + DAILY_SUMMARY_MINUTE_BOLIVIA
     now_minutes = now_bo.hour * 60 + now_bo.minute
     is_summary_time = now_minutes >= target_minutes
     already_sent_today = state.get("last_daily_summary_date") == today_str
 
+    send_chart_now = hubo_cambio_precio
+
     if is_summary_time and not already_sent_today and oficial is not None and paralelo is not None:
         messages.append(build_daily_summary(oficial, paralelo, oficial_src, paralelo_src, now_bo, history))
         state["last_daily_summary_date"] = today_str
+        send_chart_now = True
+
+    if os.environ.get("SEND_CHART") == "true":
+        send_chart_now = True
 
     for msg in messages:
         send_telegram(msg)
         print("Enviado:", msg.splitlines()[0])
 
-    if not messages:
+    if send_chart_now:
+        photos = build_chart_album(history, now_bo)
+        if photos:
+            send_telegram_photo_album(photos)
+            print(f"Gráficas enviadas ({len(photos)})")
+        else:
+            print("No hay historial suficiente todavía para las gráficas")
+
+    if not messages and not send_chart_now:
         print("Sin cambios ni resumen pendiente. Oficial:", oficial, "Paralelo:", paralelo)
 
     if oficial is not None:
@@ -580,4 +705,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
-
