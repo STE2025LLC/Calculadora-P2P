@@ -10,10 +10,15 @@ GitHub, sin autenticación porque el repo es público). Por eso puede vivir
 en un servicio totalmente aparte, sin mezclarse con ningún otro bot.
 
 Comandos:
-  /grafica            -> álbum con las 4 gráficas (2 sem, 1 mes, 2 meses, 3 meses)
-  /grafica 30         -> una sola gráfica de los últimos 30 días (cualquier n° de días)
+  /grafica            -> muestra botones (2 sem, 1 mes, 2, 3, 6 meses, 1 año)
+                         para elegir qué rango graficar
   /precio             -> último valor oficial/paralelo conocido, en texto
   /start, /help       -> ayuda
+
+Nota: los rangos de 6 meses y 1 año solo van a mostrar datos completos una
+vez que el historial (state/history.csv) acumule esa cantidad de tiempo
+guardado. Eso depende de HISTORY_KEEP_DAYS en scripts/check_rates.py del
+repo principal.
 
 Solo responde al chat_id configurado en TELEGRAM_CHAT_ID (para que nadie
 más pueda usar tu bot aunque adivine el username).
@@ -61,6 +66,8 @@ DEFAULT_RANGES = [
     (30, "1 mes"),
     (60, "2 meses"),
     (90, "3 meses"),
+    (180, "6 meses"),
+    (365, "1 año"),
 ]
 
 API_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
@@ -147,13 +154,32 @@ def build_chart_album(history, now_bo, ranges=DEFAULT_RANGES):
 # Envío a Telegram
 # --------------------------------------------------------------------------
 
-def send_message(chat_id, text):
-    requests.post(f"{API_URL}/sendMessage", json={
+def send_message(chat_id, text, reply_markup=None):
+    payload = {
         "chat_id": chat_id,
         "text": text,
         "parse_mode": "HTML",
         "disable_web_page_preview": True,
+    }
+    if reply_markup:
+        payload["reply_markup"] = json.dumps(reply_markup)
+    requests.post(f"{API_URL}/sendMessage", json=payload, timeout=15)
+
+
+def answer_callback(callback_query_id):
+    requests.post(f"{API_URL}/answerCallbackQuery", json={
+        "callback_query_id": callback_query_id,
     }, timeout=15)
+
+
+def grafica_keyboard():
+    """Botones inline, 2 por fila, uno por cada rango de DEFAULT_RANGES."""
+    buttons = [
+        {"text": label, "callback_data": f"grafica:{days}"}
+        for days, label in DEFAULT_RANGES
+    ]
+    rows = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+    return {"inline_keyboard": rows}
 
 
 def send_photo(chat_id, photo_bytes, caption=""):
@@ -189,7 +215,12 @@ def send_photo_album(chat_id, photos):
 # Manejo de comandos
 # --------------------------------------------------------------------------
 
-def handle_grafica(chat_id, text):
+def handle_grafica(chat_id):
+    """/grafica -> muestra los botones para elegir el rango."""
+    send_message(chat_id, "📊 ¿Qué rango querés ver?", reply_markup=grafica_keyboard())
+
+
+def handle_grafica_choice(chat_id, days):
     try:
         history = fetch_history()
     except Exception as e:
@@ -201,24 +232,12 @@ def handle_grafica(chat_id, text):
         return
 
     now_bo = datetime.now(BOLIVIA_TZ)
-
-    # ¿Pidió un número de días específico? Ej: "/grafica 30"
-    match = re.search(r"(\d+)", text)
-    if match:
-        days = int(match.group(1))
-        png = build_chart_png(history, now_bo, days=days)
-        if png:
-            send_photo(chat_id, png, caption=f"📈 <b>Evolución BOB/USD · últimos {days} días</b>")
-        else:
-            send_message(chat_id, f"No hay suficientes datos en los últimos {days} días todavía.")
-        return
-
-    # Sin número -> álbum con los rangos por defecto
-    photos = build_chart_album(history, now_bo)
-    if photos:
-        send_photo_album(chat_id, photos)
+    label = next((l for d, l in DEFAULT_RANGES if d == days), f"{days} días")
+    png = build_chart_png(history, now_bo, days=days)
+    if png:
+        send_photo(chat_id, png, caption=f"📈 <b>Evolución BOB/USD · últimos {label}</b>")
     else:
-        send_message(chat_id, "Todavía no hay suficiente historial para graficar.")
+        send_message(chat_id, f"No hay suficientes datos en los últimos {label} todavía.")
 
 
 def handle_precio(chat_id):
@@ -242,8 +261,7 @@ def handle_precio(chat_id):
 def handle_help(chat_id):
     msg = (
         "🤖 <b>Bot de gráficas BOB/USD</b>\n\n"
-        "/grafica – álbum con 2 semanas, 1 mes, 2 y 3 meses\n"
-        "/grafica 30 – una sola gráfica, últimos N días\n"
+        "/grafica – elegís el rango con botones (2 sem, 1, 2, 3, 6 meses, 1 año)\n"
         "/precio – último valor oficial y paralelo\n"
     )
     send_message(chat_id, msg)
@@ -267,6 +285,23 @@ def run():
 
             for update in updates:
                 offset = update["update_id"] + 1
+
+                # Click en un botón (elegir rango de la gráfica)
+                callback = update.get("callback_query")
+                if callback:
+                    chat_id = str(callback["message"]["chat"]["id"])
+                    answer_callback(callback["id"])
+                    if chat_id != str(TELEGRAM_CHAT_ID):
+                        continue
+                    data = callback.get("data", "")
+                    if data.startswith("grafica:"):
+                        try:
+                            days = int(data.split(":", 1)[1])
+                        except ValueError:
+                            continue
+                        handle_grafica_choice(chat_id, days)
+                    continue
+
                 msg = update.get("message") or update.get("channel_post")
                 if not msg:
                     continue
@@ -280,7 +315,7 @@ def run():
                     continue
 
                 if text.startswith("/grafica"):
-                    handle_grafica(chat_id, text)
+                    handle_grafica(chat_id)
                 elif text.startswith("/precio"):
                     handle_precio(chat_id)
                 elif text.startswith("/start") or text.startswith("/help"):
@@ -296,4 +331,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-
