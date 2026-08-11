@@ -657,7 +657,7 @@ def main():
     is_summary_time = now_minutes >= target_minutes
     already_sent_today = state.get("last_daily_summary_date") == today_str
 
-    send_chart_now = hubo_cambio_precio
+    send_chart_now = False
 
     if is_summary_time and not already_sent_today and oficial is not None and paralelo is not None:
         messages.append(build_daily_summary(oficial, paralelo, oficial_src, paralelo_src, now_bo, history))
