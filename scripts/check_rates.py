@@ -510,15 +510,30 @@ def build_chart_png(history, now_bo, days):
     fig, ax = plt.subplots(figsize=(9, 5), dpi=150)
     if fechas_of:
         ax.plot(fechas_of, valores_of, label="Oficial", color="#2e7d32", linewidth=1.6)
+        ax.annotate(
+            fmt(valores_of[-1]),
+            xy=(fechas_of[-1], valores_of[-1]),
+            xytext=(8, 0), textcoords="offset points",
+            va="center", fontsize=9, fontweight="bold", color="#2e7d32",
+        )
     if fechas_pa:
         ax.plot(fechas_pa, valores_pa, label="Paralelo", color="#1565c0", linewidth=1.6)
+        ax.annotate(
+            fmt(valores_pa[-1]),
+            xy=(fechas_pa[-1], valores_pa[-1]),
+            xytext=(8, 0), textcoords="offset points",
+            va="center", fontsize=9, fontweight="bold", color="#1565c0",
+        )
 
     ax.set_title(f"Evolución BOB/USD · últimos {days} días")
     ax.set_ylabel("BOB por USD")
     ax.grid(True, alpha=0.3)
-    ax.legend()
+    ax.legend(loc="upper left")
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
     fig.autofmt_xdate()
+
+    # Margen a la derecha para que no se corten las etiquetas de precio
+    ax.margins(x=0.08)
     fig.tight_layout()
 
     buf = io.BytesIO()
