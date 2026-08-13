@@ -43,7 +43,7 @@ TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 DAILY_SUMMARY_HOUR_BOLIVIA = 9
 DAILY_SUMMARY_MINUTE_BOLIVIA = 30
 
-HISTORY_KEEP_DAYS = 400
+HISTORY_KEEP_DAYS = None  # None = guardar todo el historial, sin límite de tiempo
 
 COMPARE_DECIMALS = 2
 
@@ -412,6 +412,8 @@ def save_history(rows):
 
 
 def prune_history(rows, now, keep_days=HISTORY_KEEP_DAYS):
+    if keep_days is None:
+        return rows
     cutoff = now - timedelta(days=keep_days)
     return [r for r in rows if r["dt"] >= cutoff]
 
