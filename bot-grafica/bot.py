@@ -68,6 +68,9 @@ DEFAULT_RANGES = [
     (90, "3 meses"),
     (180, "6 meses"),
     (365, "1 año"),
+    (730, "2 años"),
+    (1825, "5 años"),
+    (None, "Todo"),
 ]
 
 API_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
@@ -110,8 +113,15 @@ def fmt(v):
 # --------------------------------------------------------------------------
 
 def build_chart_png(history, now_bo, days):
-    cutoff = now_bo - timedelta(days=days)
-    rows = sorted((r for r in history if r["dt"] >= cutoff), key=lambda r: r["dt"])
+    """`days=None` grafica todo el historial disponible, sin recortar."""
+    if days is None:
+        rows = sorted(history, key=lambda r: r["dt"])
+        titulo_rango = "histórico completo"
+    else:
+        cutoff = now_bo - timedelta(days=days)
+        rows = sorted((r for r in history if r["dt"] >= cutoff), key=lambda r: r["dt"])
+        titulo_rango = f"últimos {days} días"
+
     if len(rows) < 2:
         return None
 
@@ -138,13 +148,14 @@ def build_chart_png(history, now_bo, days):
             va="center", fontsize=9, fontweight="bold", color="#1565c0",
         )
 
-    ax.set_title(f"Evolución BOB/USD · últimos {days} días")
+    ax.set_title(f"Evolución BOB/USD · {titulo_rango}")
     ax.set_ylabel("BOB por USD")
     ax.grid(True, alpha=0.3)
     ax.legend(loc="upper left")
 
     # Formato de fecha "inteligente": muestra día/mes normalmente y agrega
-    # el año solo donde el rango cruza de un año a otro.
+    # el año solo donde el rango cruza de un año a otro (evita ambigüedad
+    # en gráficas largas como 6 meses/1 año sin ensuciar las cortas).
     locator = mdates.AutoDateLocator()
     ax.xaxis.set_major_locator(locator)
     ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
@@ -166,7 +177,7 @@ def build_chart_album(history, now_bo, ranges=DEFAULT_RANGES):
     for days, label in ranges:
         png = build_chart_png(history, now_bo, days=days)
         if png:
-            photos.append((png, f"📈 <b>Evolución BOB/USD · últimos {label}</b>"))
+            photos.append((png, f"📈 <b>Evolución BOB/USD · {label}</b>"))
     return photos
 
 
@@ -195,7 +206,7 @@ def answer_callback(callback_query_id):
 def grafica_keyboard():
     """Botones inline, 2 por fila, uno por cada rango de DEFAULT_RANGES."""
     buttons = [
-        {"text": label, "callback_data": f"grafica:{days}"}
+        {"text": label, "callback_data": f"grafica:{days if days is not None else 'all'}"}
         for days, label in DEFAULT_RANGES
     ]
     rows = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
@@ -255,16 +266,16 @@ def handle_grafica_choice(chat_id, days):
     label = next((l for d, l in DEFAULT_RANGES if d == days), f"{days} días")
     png = build_chart_png(history, now_bo, days=days)
     if png:
-        send_photo(chat_id, png, caption=f"📈 <b>Evolución BOB/USD · últimos {label}</b>")
+        send_photo(chat_id, png, caption=f"📈 <b>Evolución BOB/USD · {label}</b>")
     else:
-        send_message(chat_id, f"No hay suficientes datos en los últimos {label} todavía.")
+        send_message(chat_id, f"No hay suficientes datos para \"{label}\" todavía.")
 
 
 def handle_precio(chat_id):
     try:
         state = fetch_state()
     except Exception as e:
-        send_message(chat_id, f"⚠️ No pude leer la última cotización ahora mismo ({e}).")
+        send_message(chat_id, f"⚠️ No pude leer la última cotización ({e}).")
         return
 
     updated_at = state.get("updated_at", "")
@@ -281,7 +292,7 @@ def handle_precio(chat_id):
 def handle_help(chat_id):
     msg = (
         "🤖 <b>Bot de gráficas BOB/USD</b>\n\n"
-        "/grafica – elige el rango con botones (2 sem, 1, 2, 3, 6 meses, 1 año)\n"
+        "/grafica – elige el rango con botones (2 sem, 1, 2, 3, 6 meses, 1, 2, 5 años o Todo)\n"
         "/precio – último valor oficial y paralelo\n"
     )
     send_message(chat_id, msg)
@@ -315,10 +326,14 @@ def run():
                         continue
                     data = callback.get("data", "")
                     if data.startswith("grafica:"):
-                        try:
-                            days = int(data.split(":", 1)[1])
-                        except ValueError:
-                            continue
+                        raw = data.split(":", 1)[1]
+                        if raw == "all":
+                            days = None
+                        else:
+                            try:
+                                days = int(raw)
+                            except ValueError:
+                                continue
                         handle_grafica_choice(chat_id, days)
                     continue
 
