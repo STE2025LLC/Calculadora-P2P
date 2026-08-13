@@ -529,7 +529,12 @@ def build_chart_png(history, now_bo, days):
     ax.set_ylabel("BOB por USD")
     ax.grid(True, alpha=0.3)
     ax.legend(loc="upper left")
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
+
+    # Formato de fecha "inteligente": muestra día/mes normalmente y agrega
+    # el año solo donde el rango cruza de un año a otro.
+    locator = mdates.AutoDateLocator()
+    ax.xaxis.set_major_locator(locator)
+    ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
     fig.autofmt_xdate()
 
     # Margen a la derecha para que no se corten las etiquetas de precio
