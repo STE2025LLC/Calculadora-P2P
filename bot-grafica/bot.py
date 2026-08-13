@@ -232,7 +232,7 @@ def send_photo_album(chat_id, photos):
 
 def handle_grafica(chat_id):
     """/grafica -> muestra los botones para elegir el rango."""
-    send_message(chat_id, "📊 ¿Qué rango querés ver?", reply_markup=grafica_keyboard())
+    send_message(chat_id, "📊 ¿Qué rango quieres ver?", reply_markup=grafica_keyboard())
 
 
 def handle_grafica_choice(chat_id, days):
@@ -276,7 +276,7 @@ def handle_precio(chat_id):
 def handle_help(chat_id):
     msg = (
         "🤖 <b>Bot de gráficas BOB/USD</b>\n\n"
-        "/grafica – elegís el rango con botones (2 sem, 1, 2, 3, 6 meses, 1 año)\n"
+        "/grafica – elige el rango con botones (2 sem, 1, 2, 3, 6 meses, 1 año)\n"
         "/precio – último valor oficial y paralelo\n"
     )
     send_message(chat_id, msg)
