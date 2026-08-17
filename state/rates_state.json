@@ -1,10 +1,10 @@
 {
   "oficial": 11.58,
-  "paralelo": 11.61,
+  "paralelo": 11.57,
   "last_daily_summary_date": "2026-08-17",
   "oficial_src": "bo.dolarapi.com (respaldo, puede tener retraso)",
   "paralelo_src": "Binance P2P directo",
   "eur_usdt": 0.872,
   "eur_usdt_src": "Binance P2P directo (Wise/Santander, sin pedir BTC)",
-  "updated_at": "2026-08-17T09:50:23.683013-04:00"
+  "updated_at": "2026-08-17T09:59:02.431304-04:00"
 }
