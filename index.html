@@ -529,7 +529,6 @@
   <p class="section-label">Evolución histórica</p>
 
   <div class="chart-toolbar" id="chartToolbar">
-    <button class="range-btn" data-range="10m">10 min</button>
     <button class="range-btn" data-range="1h">1 h</button>
     <button class="range-btn" data-range="4h">4 h</button>
     <button class="range-btn" data-range="1d">1 día</button>
@@ -1050,7 +1049,6 @@
   // de líneas (Chart.js) que se puede filtrar por rango de tiempo.
 
   const CHART_RANGES = {
-    '10m': { label: '10 min', ms: 10 * 60 * 1000, unit: 'minute' },
     '1h':  { label: '1 h',    ms: 60 * 60 * 1000, unit: 'minute' },
     '4h':  { label: '4 h',    ms: 4 * 60 * 60 * 1000, unit: 'hour' },
     '1d':  { label: '1 día',  ms: 24 * 60 * 60 * 1000, unit: 'hour' },
@@ -1156,6 +1154,8 @@
 
     if (ratesChart) ratesChart.destroy();
     const ctx = document.getElementById('ratesChart').getContext('2d');
+    const paraleloColor = cssVar('--paralelo');
+    const oficialColor = cssVar('--oficial');
     ratesChart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -1163,8 +1163,8 @@
           {
             label: 'Paralelo',
             data: paraleloData,
-            borderColor: cssVar('--paralelo'),
-            backgroundColor: 'transparent',
+            borderColor: paraleloColor,
+            backgroundColor: paraleloColor,
             borderWidth: 2,
             pointRadius: 0,
             pointHoverRadius: 4,
@@ -1174,8 +1174,8 @@
           {
             label: 'Oficial',
             data: oficialData,
-            borderColor: cssVar('--oficial'),
-            backgroundColor: 'transparent',
+            borderColor: oficialColor,
+            backgroundColor: oficialColor,
             borderWidth: 2,
             pointRadius: 0,
             pointHoverRadius: 4,
@@ -1212,8 +1212,20 @@
             borderWidth: 1,
             titleColor: cssVar('--text'),
             bodyColor: cssVar('--text'),
+            usePointStyle: false,
+            boxWidth: 10,
+            boxHeight: 10,
             callbacks: {
-              label: (ctx) => ctx.dataset.label + ': ' + fmt(ctx.parsed.y) + ' BOB'
+              label: (ctx) => ctx.dataset.label + ': ' + fmt(ctx.parsed.y) + ' BOB',
+              labelColor: (ctx) => {
+                const color = ctx.dataset.borderColor;
+                return {
+                  borderColor: color,
+                  backgroundColor: color,
+                  borderWidth: 0,
+                  borderRadius: 2
+                };
+              }
             }
           }
         }
