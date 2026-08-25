@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -366,6 +365,79 @@
   .reset-btn:active { background: var(--surface2); color: var(--text); }
 
   .zero-hint { text-align: center; padding: 24px 0; color: var(--muted); font-size: 14px; }
+
+  /* HISTORICAL CHART */
+  .chart-toolbar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .chart-toolbar::-webkit-scrollbar { height: 4px; }
+  .chart-toolbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .range-btn {
+    flex: 0 0 auto;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .range-btn:active { background: var(--border); }
+  .range-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 12px 10px;
+  }
+
+  .chart-legend {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .chart-legend .legend-item { display: flex; align-items: center; gap: 6px; }
+  .chart-legend .dot-line { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
+
+  .chart-canvas-wrap { position: relative; height: 230px; }
+  .chart-canvas-wrap.hidden { display: none; }
+
+  .chart-empty {
+    display: none;
+    text-align: center;
+    padding: 40px 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .chart-empty.show { display: block; }
+
+  .chart-status {
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
 </style>
 </head>
 <body>
@@ -453,12 +525,46 @@
 
   <button class="reset-btn" onclick="resetAll()">↺ Limpiar montos</button>
 
+  <div class="divider"></div>
+  <p class="section-label">Evolución histórica</p>
+
+  <div class="chart-toolbar" id="chartToolbar">
+    <button class="range-btn" data-range="10m">10 min</button>
+    <button class="range-btn" data-range="1h">1 h</button>
+    <button class="range-btn" data-range="4h">4 h</button>
+    <button class="range-btn" data-range="1d">1 día</button>
+    <button class="range-btn" data-range="1w">1 sem</button>
+    <button class="range-btn active" data-range="1mo">1 mes</button>
+    <button class="range-btn" data-range="3mo">3 meses</button>
+    <button class="range-btn" data-range="6mo">6 meses</button>
+    <button class="range-btn" data-range="1y">1 año</button>
+    <button class="range-btn" data-range="2y">2 años</button>
+    <button class="range-btn" data-range="3y">3 años</button>
+    <button class="range-btn" data-range="4y">4 años</button>
+    <button class="range-btn" data-range="5y">5 años</button>
+    <button class="range-btn" data-range="all">Todo</button>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-legend">
+      <span class="legend-item"><span class="dot-line" style="background:var(--paralelo)"></span>Paralelo</span>
+      <span class="legend-item"><span class="dot-line" style="background:var(--oficial)"></span>Oficial</span>
+    </div>
+    <div class="chart-canvas-wrap" id="chartCanvasWrap">
+      <canvas id="ratesChart"></canvas>
+    </div>
+    <div class="chart-empty" id="chartEmpty">Todavía no hay suficientes datos guardados para este rango.</div>
+    <div class="chart-status" id="chartStatus">Cargando historial…</div>
+  </div>
+
   <div class="note">
     <strong>¿Cómo funciona?</strong><br>
     Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. La calculadora compara paralelo vs. oficial y te dice cuál te conviene y cuántos BOB de más obtienes con esa opción, marcando la tarjeta ganadora con ⭐. El tipo de cambio <strong>oficial</strong> (TCO) se lee primero de <strong>apibcb.cucu.bo</strong>, una API independiente que republica en JSON el dato publicado por el BCB (sin depender de un proxy CORS de terceros que podría cachear datos viejos); si falla, se intenta leer directo del HTML de la página de última cotización de <strong>bcb.gob.bo</strong> vía proxy público, y si eso también falla, se usa bo.dolarapi.com. Nota: el BCB publica el TCO una sola vez por día hábil (cerca de las 20:00, vigente al día siguiente), así que ninguna fuente puede mostrar cambios más rápido que eso. EUR/USD se lee de open.er-api.com. El <strong>paralelo</strong> se lee del precio "Vendés a" de Binance P2P (USDT/BOB) a través del endpoint específico de la API pública de criptoya.com — el mismo dato que ves en la tabla de <strong>criptoya.com/bo</strong>, con CORS habilitado y sin necesitar proxy; si esa API no responde, como respaldo se intenta leer el HTML de sitios de referencia a través de un proxy público, que puede fallar en cualquier momento. El chip <strong>EUR/USDT · Binance P2P</strong> muestra el mejor precio (el más bajo) al que se está comprando USDT con euros en Binance P2P, filtrando solo anuncios que aceptan <strong>Wise</strong> o <strong>Banco Santander</strong> y que <strong>no exigen tener BTC</strong> para poder operar con el anunciante. Ese filtrado lo hace el bot de Telegram (que corre server-side vía GitHub Actions cada 15 minutos, sin necesitar proxy porque no es un navegador) y lo deja guardado en el repo; esta página lo lee directo de ahí, mismo origen, sin proxy. Si ese dato no está disponible o quedó viejo, como respaldo se intenta la misma consulta directo desde el navegador vía un proxy CORS público (puede fallar), y si eso también falla, se usa el precio general de criptoya.com, SIN esos filtros — el chip avisa si eso pasa. Si tienes un monto en euros cargado arriba, debajo del chip aparece a cuántos USDT equivale. Si alguno no se pudo leer, edítalo directamente en su casillero de arriba.
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script>
   let syncing = false;
 
@@ -935,9 +1041,230 @@
     calc();
   }
 
+  // --- GRÁFICA HISTÓRICA ---
+  //
+  // Lee state/history.csv (mismo archivo que el bot de Telegram actualiza y
+  // comitea cada ~15 min vía GitHub Actions) con un fetch relativo — mismo
+  // origen que esta página en GitHub Pages, sin proxy ni CORS. Cada fila es
+  // una lectura con fecha/hora, oficial y paralelo. Con eso arma una gráfica
+  // de líneas (Chart.js) que se puede filtrar por rango de tiempo.
+
+  const CHART_RANGES = {
+    '10m': { label: '10 min', ms: 10 * 60 * 1000, unit: 'minute' },
+    '1h':  { label: '1 h',    ms: 60 * 60 * 1000, unit: 'minute' },
+    '4h':  { label: '4 h',    ms: 4 * 60 * 60 * 1000, unit: 'hour' },
+    '1d':  { label: '1 día',  ms: 24 * 60 * 60 * 1000, unit: 'hour' },
+    '1w':  { label: '1 sem',  ms: 7 * 24 * 60 * 60 * 1000, unit: 'day' },
+    '1mo': { label: '1 mes',  ms: 30 * 24 * 60 * 60 * 1000, unit: 'day' },
+    '3mo': { label: '3 meses', ms: 90 * 24 * 60 * 60 * 1000, unit: 'week' },
+    '6mo': { label: '6 meses', ms: 182 * 24 * 60 * 60 * 1000, unit: 'month' },
+    '1y':  { label: '1 año',  ms: 365 * 24 * 60 * 60 * 1000, unit: 'month' },
+    '2y':  { label: '2 años', ms: 2 * 365 * 24 * 60 * 60 * 1000, unit: 'month' },
+    '3y':  { label: '3 años', ms: 3 * 365 * 24 * 60 * 60 * 1000, unit: 'month' },
+    '4y':  { label: '4 años', ms: 4 * 365 * 24 * 60 * 60 * 1000, unit: 'year' },
+    '5y':  { label: '5 años', ms: 5 * 365 * 24 * 60 * 60 * 1000, unit: 'year' },
+    'all': { label: 'Todo',   ms: Infinity, unit: 'month' }
+  };
+  const CHART_REFRESH_MS = 5 * 60 * 1000; // re-lee el CSV cada 5 min
+  const MAX_CHART_POINTS = 1500; // por serie, para no trabar el navegador con años de datos
+
+  let historyData = []; // [{ t: <ms epoch>, oficial, paralelo }], ordenado por t
+  let selectedRange = '1mo';
+  let ratesChart = null;
+
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function parseHistoryCSV(text) {
+    const lines = text.split('\n');
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) { // fila 0 = encabezado
+      const line = lines[i].trim();
+      if (!line) continue;
+      const parts = line.split(',');
+      if (parts.length < 3) continue;
+      const t = Date.parse(parts[0]);
+      if (isNaN(t)) continue;
+      const oficial = parseFloat(parts[1]);
+      const paralelo = parseFloat(parts[2]);
+      rows.push({
+        t,
+        oficial: isNaN(oficial) ? null : oficial,
+        paralelo: isNaN(paralelo) ? null : paralelo
+      });
+    }
+    rows.sort((a, b) => a.t - b.t);
+    return rows;
+  }
+
+  function downsample(points, maxPoints) {
+    if (points.length <= maxPoints) return points;
+    const step = Math.ceil(points.length / maxPoints);
+    const out = [];
+    for (let i = 0; i < points.length; i += step) out.push(points[i]);
+    const last = points[points.length - 1];
+    if (out[out.length - 1] !== last) out.push(last);
+    return out;
+  }
+
+  function fmtChartDate(ms) {
+    return new Date(ms).toLocaleString('es-BO', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function renderChart() {
+    const wrap = document.getElementById('chartCanvasWrap');
+    const empty = document.getElementById('chartEmpty');
+    const status = document.getElementById('chartStatus');
+
+    if (!historyData.length) {
+      wrap.classList.add('hidden');
+      empty.classList.add('show');
+      empty.textContent = 'Todavía no se pudo leer el historial (state/history.csv).';
+      status.textContent = '';
+      return;
+    }
+
+    const range = CHART_RANGES[selectedRange];
+    const oldestAvailable = historyData[0].t;
+    const newestAvailable = historyData[historyData.length - 1].t;
+    const now = Date.now();
+    const cutoff = range.ms === Infinity ? -Infinity : now - range.ms;
+
+    let points = historyData.filter(p => p.t >= cutoff);
+    points = downsample(points, MAX_CHART_POINTS);
+
+    if (points.length < 2) {
+      wrap.classList.add('hidden');
+      empty.classList.add('show');
+      empty.textContent = 'Todavía no hay suficientes datos guardados para "' + range.label + '". El historial arranca el ' + fmtChartDate(oldestAvailable) + '.';
+      status.textContent = '';
+      return;
+    }
+
+    wrap.classList.remove('hidden');
+    empty.classList.remove('show');
+
+    const xMin = range.ms === Infinity ? oldestAvailable : Math.max(cutoff, oldestAvailable);
+    const xMax = now;
+
+    const paraleloData = points.filter(p => p.paralelo != null).map(p => ({ x: p.t, y: p.paralelo }));
+    const oficialData = points.filter(p => p.oficial != null).map(p => ({ x: p.t, y: p.oficial }));
+
+    if (ratesChart) ratesChart.destroy();
+    const ctx = document.getElementById('ratesChart').getContext('2d');
+    ratesChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'Paralelo',
+            data: paraleloData,
+            borderColor: cssVar('--paralelo'),
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            tension: 0.15,
+            spanGaps: true
+          },
+          {
+            label: 'Oficial',
+            data: oficialData,
+            borderColor: cssVar('--oficial'),
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            tension: 0.15,
+            spanGaps: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: {
+            type: 'time',
+            min: xMin,
+            max: xMax,
+            time: { unit: range.unit },
+            adapters: { date: {} },
+            ticks: { color: cssVar('--muted'), maxRotation: 0, autoSkip: true, font: { size: 10 } },
+            grid: { color: 'rgba(255,255,255,0.05)' }
+          },
+          y: {
+            ticks: { color: cssVar('--muted'), font: { size: 10 } },
+            grid: { color: 'rgba(255,255,255,0.06)' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: cssVar('--surface'),
+            borderColor: cssVar('--border'),
+            borderWidth: 1,
+            titleColor: cssVar('--text'),
+            bodyColor: cssVar('--text'),
+            callbacks: {
+              label: (ctx) => ctx.dataset.label + ': ' + fmt(ctx.parsed.y) + ' BOB'
+            }
+          }
+        }
+      }
+    });
+
+    let msg = 'Último dato: ' + fmtChartDate(newestAvailable) + ' · ' + historyData.length + ' lecturas guardadas.';
+    if (range.ms !== Infinity && oldestAvailable > cutoff) {
+      msg = 'Mostrando todo el historial disponible (desde ' + fmtChartDate(oldestAvailable) + ') — todavía no hay datos tan antiguos para "' + range.label + '". ' + msg;
+    }
+    status.textContent = msg;
+  }
+
+  async function loadHistory() {
+    const status = document.getElementById('chartStatus');
+    try {
+      const res = await fetch('state/history.csv', { cache: 'no-store' });
+      if (!res.ok) throw new Error('http ' + res.status);
+      const text = await res.text();
+      historyData = parseHistoryCSV(text);
+      renderChart();
+    } catch (err) {
+      if (!historyData.length) {
+        document.getElementById('chartCanvasWrap').classList.add('hidden');
+        const empty = document.getElementById('chartEmpty');
+        empty.classList.add('show');
+        empty.textContent = 'No se pudo leer state/history.csv (¿estás viendo esto fuera de GitHub Pages?).';
+      }
+      status.textContent = '';
+    }
+  }
+
+  document.getElementById('chartToolbar').addEventListener('click', (e) => {
+    const btn = e.target.closest('.range-btn');
+    if (!btn) return;
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedRange = btn.dataset.range;
+    renderChart();
+  });
+
+  // Refresca el historial solo (sin re-pedir los tipos de cambio en vivo)
+  // cada 5 min, y también cuando el usuario vuelve a la pestaña.
+  setInterval(loadHistory, CHART_REFRESH_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') loadHistory();
+  });
+
   // Al abrir la página, intenta traer todo automáticamente.
   fetchAllRates();
+  loadHistory();
 </script>
 </body>
 </html>
-
