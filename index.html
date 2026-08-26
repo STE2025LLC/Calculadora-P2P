@@ -366,6 +366,24 @@
 
   .zero-hint { text-align: center; padding: 24px 0; color: var(--muted); font-size: 14px; }
 
+  /* BOB -> USD/EUR REVERSE CONVERTER */
+  .input-group.bob { border-color: rgba(79,124,255,0.35); }
+  .input-group.bob label { color: var(--accent); }
+
+  .bob-rate-toggle {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .bob-rate-toggle .range-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .result-card.eur::before { background: var(--eur); }
+  .eur .rc-badge { background: rgba(192,132,252,0.15); color: var(--eur); }
+  .eur .result-val { color: var(--eur); }
+
   /* HISTORICAL CHART */
   .chart-toolbar {
     display: flex;
@@ -526,6 +544,26 @@
   <button class="reset-btn" onclick="resetAll()">↺ Limpiar montos</button>
 
   <div class="divider"></div>
+  <p class="section-label">¿Cuánto es en $ o €?</p>
+
+  <div class="input-group bob">
+    <label>🇧🇴 Bolivianos</label>
+    <div class="input-row">
+      <div class="currency-badge">Bs</div>
+      <input type="number" id="amount_bob" placeholder="10000" step="1" inputmode="decimal" oninput="calcFromBob()">
+    </div>
+  </div>
+
+  <div class="bob-rate-toggle" id="bobRateToggle">
+    <button class="range-btn active" data-rate="oficial">Tasa oficial</button>
+    <button class="range-btn" data-rate="paralelo">Tasa paralelo</button>
+  </div>
+
+  <div class="results" id="bobResults" style="margin-top:10px;">
+    <div class="zero-hint">Ingresa un monto en bolivianos arriba</div>
+  </div>
+
+  <div class="divider"></div>
   <p class="section-label">Evolución histórica</p>
 
   <div class="chart-toolbar" id="chartToolbar">
@@ -610,6 +648,7 @@
 
   function calc() {
     updateEurUsdtHint();
+    calcFromBob();
     const usd = parseFloat(document.getElementById('amount_usd').value);
     const { paralelo, oficial } = getRates();
     const container = document.getElementById('results');
@@ -680,6 +719,65 @@
     document.getElementById('amount_usd').value = '';
     document.getElementById('results').innerHTML = '<div class="zero-hint">Ingresa un monto en euros o en dólares arriba</div>';
   }
+
+  // --- CONVERSOR INVERSO: BOB -> USD / EUR ---
+  let selectedBobRate = 'oficial';
+
+  function calcFromBob() {
+    const bob = parseFloat(document.getElementById('amount_bob').value);
+    const { paralelo, oficial, eurPerUsd } = getRates();
+    const rate = selectedBobRate === 'oficial' ? oficial : paralelo;
+    const container = document.getElementById('bobResults');
+
+    if (!bob || bob <= 0 || !rate || rate <= 0) {
+      container.innerHTML = '<div class="zero-hint">Ingresa un monto en bolivianos arriba</div>';
+      return;
+    }
+
+    const usd = bob / rate;
+    const rateLabel = selectedBobRate === 'oficial' ? 'Oficial' : 'Paralelo';
+
+    let eurRow = '';
+    if (eurPerUsd > 0) {
+      const eur = usd * eurPerUsd;
+      eurRow = `
+      <div class="result-card eur">
+        <div class="rc-header">
+          <span class="rc-badge">€ Euros</span>
+        </div>
+        <div class="result-row">
+          <div><div class="result-val">€ ${fmt(eur)}</div></div>
+        </div>
+      </div>`;
+    }
+
+    container.innerHTML = `
+      <div class="result-card ${selectedBobRate}">
+        <div class="rc-header">
+          <span class="rc-badge">$ Dólares · ${rateLabel}</span>
+          <span class="rc-rate">1 $ = ${fmt(rate)} BOB</span>
+        </div>
+        <div class="result-row">
+          <div><div class="result-val">$ ${fmt(usd)}</div></div>
+        </div>
+      </div>
+      ${eurRow}
+    `;
+  }
+
+  function resetBob() {
+    document.getElementById('amount_bob').value = '';
+    document.getElementById('bobResults').innerHTML = '<div class="zero-hint">Ingresa un monto en bolivianos arriba</div>';
+  }
+
+  document.getElementById('bobRateToggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('.range-btn');
+    if (!btn) return;
+    document.querySelectorAll('#bobRateToggle .range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedBobRate = btn.dataset.rate;
+    calcFromBob();
+  });
 
   // --- AUTO-FETCH DE TIPOS DE CAMBIO ---
 
