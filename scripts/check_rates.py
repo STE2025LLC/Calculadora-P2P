@@ -54,7 +54,7 @@ MIN_CAMBIO_ALERTA = 0.01
 # Qué tan lejos de la mediana puede estar un anuncio antes de considerarlo un
 # precio "fantasma" (alguien publicando carísimo, al que nadie le compra).
 # 0.02 = 2%.
-MAX_DESVIO_OUTLIER = 0.04
+MAX_DESVIO_OUTLIER = 0.02
 
 # Rangos de la gráfica que manda el bot (días, etiqueta).
 CHART_RANGES = [
