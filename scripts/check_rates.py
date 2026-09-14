@@ -47,6 +47,15 @@ HISTORY_KEEP_DAYS = None  # None = guardar todo el historial, sin límite de tie
 
 COMPARE_DECIMALS = 2
 
+# Cambio mínimo (en BOB) para que valga la pena avisar. Con 0.0 avisa ante
+# cualquier centavo de diferencia, como antes.
+MIN_CAMBIO_ALERTA = 0.02
+
+# Qué tan lejos de la mediana puede estar un anuncio antes de considerarlo un
+# precio "fantasma" (alguien publicando carísimo, al que nadie le compra).
+# 0.02 = 2%.
+MAX_DESVIO_OUTLIER = 0.02
+
 # Rangos de la gráfica que manda el bot (días, etiqueta).
 CHART_RANGES = [
     (14, "2 semanas"),
@@ -197,7 +206,26 @@ def fetch_paralelo_binance_directo():
     if not candidatos:
         return None, None
 
-    mejor_precio, mejor_adv, mejor_advertiser = max(candidatos, key=lambda c: c[0])
+    # No tomamos el máximo a secas: un solo anuncio publicado muy por encima
+    # del resto (justamente porque nadie se lo compra, así que queda ahí
+    # parado durante horas) secuestraba la lectura y hacía saltar el paralelo
+    # de 11,55 a 12,00 y de vuelta cada 10 minutos.
+    #
+    # En vez de eso: calculamos la mediana de los anuncios que pasaron los
+    # filtros, descartamos los que se despegan más de MAX_DESVIO_OUTLIER por
+    # arriba, y recién ahí tomamos el mejor precio de los que quedan. Eso
+    # sigue dándote el precio más conveniente, pero solo entre los realistas.
+    precios = sorted(c[0] for c in candidatos)
+    n = len(precios)
+    mediana = precios[n // 2] if n % 2 else (precios[n // 2 - 1] + precios[n // 2]) / 2
+
+    techo = mediana * (1 + MAX_DESVIO_OUTLIER)
+    realistas = [p for p in precios if p <= techo]
+
+    # Si todos quedaron descartados (no debería pasar, la mediana siempre
+    # sobrevive), caemos a la mediana como valor seguro.
+    mejor_precio = max(realistas) if realistas else mediana
+
     if 5 < mejor_precio < 30:
         return mejor_precio, "Binance P2P directo"
 
@@ -651,7 +679,7 @@ def main():
     if (
         oficial is not None
         and state.get("oficial") is not None
-        and round(oficial, COMPARE_DECIMALS) != round(state["oficial"], COMPARE_DECIMALS)
+        and abs(round(oficial, COMPARE_DECIMALS) - round(state["oficial"], COMPARE_DECIMALS)) >= MIN_CAMBIO_ALERTA
     ):
         direction = "subió" if oficial > state["oficial"] else "bajó"
         messages.append(
@@ -664,7 +692,7 @@ def main():
     if (
         paralelo is not None
         and state.get("paralelo") is not None
-        and round(paralelo, COMPARE_DECIMALS) != round(state["paralelo"], COMPARE_DECIMALS)
+        and abs(round(paralelo, COMPARE_DECIMALS) - round(state["paralelo"], COMPARE_DECIMALS)) >= MIN_CAMBIO_ALERTA
     ):
         direction = "subió" if paralelo > state["paralelo"] else "bajó"
         messages.append(
