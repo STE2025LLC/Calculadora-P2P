@@ -49,12 +49,12 @@ COMPARE_DECIMALS = 2
 
 # Cambio mínimo (en BOB) para que valga la pena avisar. Con 0.0 avisa ante
 # cualquier centavo de diferencia, como antes.
-MIN_CAMBIO_ALERTA = 0.02
+MIN_CAMBIO_ALERTA = 0.01
 
 # Qué tan lejos de la mediana puede estar un anuncio antes de considerarlo un
 # precio "fantasma" (alguien publicando carísimo, al que nadie le compra).
 # 0.02 = 2%.
-MAX_DESVIO_OUTLIER = 0.02
+MAX_DESVIO_OUTLIER = 0.04
 
 # Rangos de la gráfica que manda el bot (días, etiqueta).
 CHART_RANGES = [
