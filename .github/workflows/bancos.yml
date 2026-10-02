@@ -8,18 +8,36 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: bancos
+  cancel-in-progress: false
+
 jobs:
   bancos:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python scripts/fetch_bancos.py
-      - name: Commit si hubo cambios
+
+      - name: Instalar dependencias
+        run: pip install requests beautifulsoup4
+
+      - name: Leer cotizaciones de los bancos
+        run: python scripts/fetch_bancos.py
+
+      - name: Guardar si hubo cambios
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add state/bancos_state.json
-          git diff --cached --quiet || (git commit -m "bancos: actualizar precios" && git push)
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "bancos: actualizar precios"
+          for intento in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((intento * 3))
+          done
+          exit 1
