@@ -1,10 +1,9 @@
 {
-  "updated_at": "2026-10-02T14:02:12.634309+00:00",
+  "updated_at": "2026-10-02T19:09:52.809597+00:00",
   "bcb_fecha_corte": null,
   "p2p": {
-    "compra": 11.965,
-    "venta": 11.996,
-    "actualizado": "2026-10-02T14:00:55.555801+00:00"
+    "compra": 11.972,
+    "venta": 12.006
   },
   "bancos": [
     {
@@ -12,64 +11,87 @@
       "compra": 10.9,
       "venta": 12.2,
       "fuente": "bancounion.com.bo",
-      "actualizado": "2026-10-02T14:02:11.674171+00:00"
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
+    },
+    {
+      "banco": "BCP",
+      "compra": 11.4,
+      "venta": 12.2,
+      "fuente": "bcp.com.bo",
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
     },
     {
       "banco": "BISA",
       "compra": 11.2,
       "venta": 12.2,
-      "fuente": "factura.bo",
-      "actualizado": "2026-10-02T14:00:55.555801+00:00"
+      "fuente": "bisa.com",
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
     },
     {
       "banco": "BNB",
       "compra": 11.4,
       "venta": 12.2,
-      "fuente": "factura.bo",
-      "actualizado": "2026-10-02T14:00:55.555801+00:00"
+      "fuente": "bnb.com.bo",
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
     },
     {
       "banco": "BancoSol",
       "compra": 10.71,
       "venta": 12.2,
-      "fuente": "factura.bo",
-      "actualizado": "2026-10-02T14:00:55.555801+00:00"
+      "fuente": "bancosol.com.bo",
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
     },
     {
       "banco": "Mercantil SC",
       "compra": 10.65,
       "venta": 12.2,
-      "fuente": "factura.bo",
-      "actualizado": "2026-10-02T14:00:55.555801+00:00"
+      "fuente": "bmsc.com.bo",
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
     },
     {
       "banco": "Ganadero",
       "compra": null,
       "venta": 12.2,
-      "fuente": "factura.bo",
-      "actualizado": "2026-10-02T14:00:55.555801+00:00"
+      "fuente": "factura.bo (respaldo)",
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
     },
     {
       "banco": "Económico",
       "compra": 11.3,
       "venta": 12.25,
-      "fuente": "factura.bo",
-      "actualizado": "2026-10-02T14:00:55.555801+00:00"
+      "fuente": "baneco.com.bo",
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
     },
     {
       "banco": "FIE",
       "compra": 11.4,
       "venta": 11.9,
-      "fuente": "factura.bo",
-      "actualizado": "2026-10-02T14:00:55.555801+00:00"
+      "fuente": "bancofie.com.bo",
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
     },
     {
       "banco": "Fortaleza",
       "compra": 11.6,
       "venta": 12.2,
-      "fuente": "factura.bo",
-      "actualizado": "2026-10-02T14:00:55.555801+00:00"
+      "fuente": "bancofortaleza.com.bo",
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
+    },
+    {
+      "banco": "Pyme de la Comunidad",
+      "compra": 11.5,
+      "venta": 12.15,
+      "fuente": "bco.com.bo",
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
+    },
+    {
+      "banco": "Nación Argentina",
+      "compra": 11.4,
+      "venta": 12.2,
+      "fuente": "bna.com.bo",
+      "actualizado": "2026-10-02T19:09:52.809597+00:00"
     }
   ],
-  "errores": []
+  "errores": [
+    "Ganadero: StopIteration: "
+  ]
 }
