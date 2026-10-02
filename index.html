@@ -471,6 +471,8 @@
 .bank-big small { display:block; font-size:11px; font-weight:600; color:var(--muted); letter-spacing:0; }
 .bank-big.nd { font-size:13px; color:var(--muted); }
 .bank-row.p2p .bank-big { color:var(--paralelo); }
+.bank-sub.fuente { font-size:10px; opacity:.8; }
+.bank-sub.warn { color:var(--warn); }
 .bank-status { font-size:10.5px; color:var(--muted); margin-top:10px; line-height:1.6; }
 </style>
 </head>
@@ -1451,11 +1453,13 @@
       const big = ok ? `${f2(v)}${total}` : 'sin dato';
       const compra = b.compra > 0 ? f2(b.compra) : '—';
       const venta = b.venta > 0 ? f2(b.venta) : '—';
+      const extra = (b.desactualizado ? `<div class="bank-sub warn">⚠ Dato desactualizado (${hora(b.actualizado)}): no se pudo leer ahora.</div>` : `<div class="bank-sub fuente">${b.fuente || ''} · ${hora(b.actualizado)}</div>`) + (b.nota ? `<div class="bank-sub warn">${b.nota}</div>` : '');
       const bcb = b.bcb_compra ? ` · BCB: operó a <b>${f2(b.bcb_compra)}</b> ayer` : '';
       return `<div class="bank-row${ok && v === mejor ? ' best' : ''}${ok ? '' : ' nodata'}">
         <div class="bank-name">${ok && v === mejor ? '⭐ ' : ''}${b.banco}</div>
         <div class="bank-big${ok ? '' : ' nd'}">${big}</div>
         <div class="bank-sub">Compra <b>${compra}</b> · Venta <b>${venta}</b>${bcb}</div>
+        ${extra}
       </div>`;
     };
 
