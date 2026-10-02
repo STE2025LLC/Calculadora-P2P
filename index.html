@@ -456,6 +456,22 @@
     margin-top: 8px;
     line-height: 1.5;
   }
+.bank-mode { display:flex; gap:8px; margin-bottom:10px; }
+.bank-mode .range-btn { flex:1; text-align:center; }
+.bank-list { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+.bank-row { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:11px 14px; display:grid; grid-template-columns:1fr auto; gap:3px 10px; align-items:center; }
+.bank-row.best { border-color:rgba(34,197,94,.5); }
+.bank-row.nodata { opacity:.55; }
+.bank-name { font-size:14px; font-weight:700; }
+.bank-sub { grid-column:1; font-size:11px; color:var(--muted); line-height:1.5; }
+.bank-sub b { color:var(--text); font-weight:700; }
+.bank-big { grid-row:1 / span 2; grid-column:2; text-align:right; font-size:22px; font-weight:800;
+  letter-spacing:-.4px; color:var(--oficial); }
+.bank-big small { display:block; font-size:11px; font-weight:600; color:var(--muted); letter-spacing:0; }
+.bank-big.nd { font-size:13px; color:var(--muted); }
+.bank-row.p2p .bank-big { color:var(--paralelo); }
+.bank-status { font-size:10.5px; color:var(--muted); margin-top:10px; line-height:1.6; }
 </style>
 </head>
 <body>
@@ -594,9 +610,31 @@
     <div class="chart-status" id="chartStatus">Cargando historial…</div>
   </div>
 
+  <div class="divider"></div>
+  <p class="section-label">
+    Dólar por banco
+    <button class="refresh-btn" id="bancosRefreshBtn" onclick="loadBancos()">↻ Actualizar</button>
+  </p>
+  
+  <div class="bank-mode" id="bankMode">
+    <button class="range-btn active" data-mode="vender">Quiero vender $</button>
+    <button class="range-btn" data-mode="comprar">Quiero comprar $</button>
+  </div>
+  
+  <div class="input-group usd">
+    <label>💵 Monto en dólares</label>
+    <div class="input-row">
+      <div class="currency-badge">$</div>
+      <input type="number" id="bank_usd" placeholder="1000" step="1" inputmode="decimal" oninput="renderBancos()">
+    </div>
+  </div>
+  
+  <div class="bank-list" id="bankList"><div class="zero-hint">Cargando bancos…</div></div>
+  <div class="bank-status" id="bankStatus"></div>
+
   <div class="note">
     <strong>¿Cómo funciona?</strong><br>
-    Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. La calculadora compara paralelo vs. oficial y te dice cuál te conviene y cuántos BOB de más obtienes con esa opción, marcando la tarjeta ganadora con ⭐. El tipo de cambio <strong>oficial</strong> (TCO) se lee primero de <strong>apibcb.cucu.bo</strong>, una API independiente que republica en JSON el dato publicado por el BCB (sin depender de un proxy CORS de terceros que podría cachear datos viejos); si falla, se intenta leer directo del HTML de la página de última cotización de <strong>bcb.gob.bo</strong> vía proxy público, y si eso también falla, se usa bo.dolarapi.com. Nota: el BCB publica el TCO una sola vez por día hábil (cerca de las 20:00, vigente al día siguiente), así que ninguna fuente puede mostrar cambios más rápido que eso. EUR/USD se lee de open.er-api.com. El <strong>paralelo</strong> se lee del precio "Vendés a" de Binance P2P (USDT/BOB) a través del endpoint específico de la API pública de criptoya.com — el mismo dato que ves en la tabla de <strong>criptoya.com/bo</strong>, con CORS habilitado y sin necesitar proxy; si esa API no responde, como respaldo se intenta leer el HTML de sitios de referencia a través de un proxy público, que puede fallar en cualquier momento. El chip <strong>EUR/USDT · Binance P2P</strong> muestra el mejor precio (el más bajo) al que se está comprando USDT con euros en Binance P2P, filtrando solo anuncios que aceptan <strong>Wise</strong> o <strong>Banco Santander</strong> y que <strong>no exigen tener BTC</strong> para poder operar con el anunciante. Ese filtrado lo hace el bot de Telegram (que corre server-side vía GitHub Actions cada 15 minutos, sin necesitar proxy porque no es un navegador) y lo deja guardado en el repo; esta página lo lee directo de ahí, mismo origen, sin proxy. Si ese dato no está disponible o quedó viejo, como respaldo se intenta la misma consulta directo desde el navegador vía un proxy CORS público (puede fallar), y si eso también falla, se usa el precio general de criptoya.com, SIN esos filtros — el chip avisa si eso pasa. Si tienes un monto en euros cargado arriba, debajo del chip aparece a cuántos USDT equivale. Si alguno no se pudo leer, edítalo directamente en su casillero de arriba.
+    Escribe un monto en euros o en dólares — el otro campo y los bolivianos se calculan solos. La calculadora compara paralelo vs. oficial y te dice cuál te conviene y cuántos BOB de más obtienes con esa opción, marcando la tarjeta ganadora con ⭐. El tipo de cambio <strong>oficial</strong> (TCO) se lee primero de <strong>apibcb.cucu.bo</strong>, una API independiente que republica en JSON el dato publicado por el BCB (sin depender de un proxy CORS de terceros que podría cachear datos viejos); si falla, se intenta leer directo del HTML de la página de última cotización de <strong>bcb.gob.bo</strong> vía proxy público, y si eso también falla, se usa bo.dolarapi.com. Nota: el BCB publica el TCO una sola vez por día hábil (cerca de las 20:00, vigente al día siguiente), así que ninguna fuente puede mostrar cambios más rápido que eso. EUR/USD se lee de open.er-api.com. El <strong>paralelo</strong> se lee del precio "Vendés a" de Binance P2P (USDT/BOB) a través del endpoint específico de la API pública de criptoya.com — el mismo dato que ves en la tabla de <strong>criptoya.com/bo</strong>, con CORS habilitado y sin necesitar proxy; si esa API no responde, como respaldo se intenta leer el HTML de sitios de referencia a través de un proxy público, que puede fallar en cualquier momento. El chip <strong>EUR/USDT · Binance P2P</strong> muestra el mejor precio (el más bajo) al que se está comprando USDT con euros en Binance P2P, filtrando solo anuncios que aceptan <strong>Wise</strong> o <strong>Banco Santander</strong> y que <strong>no exigen tener BTC</strong> para poder operar con el anunciante. Ese filtrado lo hace el bot de Telegram (que corre server-side vía GitHub Actions cada 15 minutos, sin necesitar proxy porque no es un navegador) y lo deja guardado en el repo; esta página lo lee directo de ahí, mismo origen, sin proxy. Si ese dato no está disponible o quedó viejo, como respaldo se intenta la misma consulta directo desde el navegador vía un proxy CORS público (puede fallar), y si eso también falla, se usa el precio general de criptoya.com, SIN esos filtros — el chip avisa si eso pasa. Si tienes un monto en euros cargado arriba, debajo del chip aparece a cuántos USDT equivale. Si alguno no se pudo leer, edítalo directamente en su casillero de arriba. La sección <strong>Dólar por banco</strong> muestra la compra y la venta que publica cada banco (vía factura.bo y la web de Banco Unión, actualizadas por GitHub Actions cada 30 minutos) y, cuando el BCB lo informa, a cuánto operó realmente cada banco el día anterior. Son precios publicados: la ventanilla o la app pueden variar.
   </div>
 </div>
 
@@ -1359,7 +1397,7 @@
   document.getElementById('chartToolbar').addEventListener('click', (e) => {
     const btn = e.target.closest('.range-btn');
     if (!btn) return;
-    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#chartToolbar .range-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     selectedRange = btn.dataset.range;
     renderChart();
@@ -1375,6 +1413,77 @@
   // Al abrir la página, intenta traer todo automáticamente.
   fetchAllRates();
   loadHistory();
+</script>
+<script>
+(function () {
+  let DATA = null, mode = 'vender';
+  const f2 = n => n.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const hora = iso => { try { return new Date(iso).toLocaleString('es-BO', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); } catch { return ''; } };
+
+  window.loadBancos = async function () {
+    const btn = document.getElementById('bancosRefreshBtn');
+    btn.disabled = true;
+    try {
+      const res = await fetch('state/bancos_state.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('http ' + res.status);
+      DATA = await res.json();
+      renderBancos();
+    } catch (e) {
+      document.getElementById('bankList').innerHTML = '<div class="zero-hint">No se pudo cargar el precio por banco.</div>';
+      document.getElementById('bankStatus').textContent = 'Detalle: ' + e.message;
+    } finally { btn.disabled = false; }
+  };
+
+  window.renderBancos = function () {
+    if (!DATA) return;
+    const usd = parseFloat(document.getElementById('bank_usd').value);
+    const key = mode === 'vender' ? 'compra' : 'venta';   // vender $ → el banco COMPRA
+    const rows = DATA.bancos.slice();
+
+    const con = rows.filter(b => b[key] > 0);
+    const sin = rows.filter(b => !(b[key] > 0));
+    con.sort((a, b) => mode === 'vender' ? b[key] - a[key] : a[key] - b[key]);
+    const mejor = con.length ? con[0][key] : null;
+
+    const card = b => {
+      const v = b[key], ok = v > 0;
+      const total = ok && usd > 0 ? `<small>${f2(usd * v)} Bs</small>` : '';
+      const big = ok ? `${f2(v)}${total}` : 'sin dato';
+      const compra = b.compra > 0 ? f2(b.compra) : '—';
+      const venta = b.venta > 0 ? f2(b.venta) : '—';
+      const bcb = b.bcb_compra ? ` · BCB: operó a <b>${f2(b.bcb_compra)}</b> ayer` : '';
+      return `<div class="bank-row${ok && v === mejor ? ' best' : ''}${ok ? '' : ' nodata'}">
+        <div class="bank-name">${ok && v === mejor ? '⭐ ' : ''}${b.banco}</div>
+        <div class="bank-big${ok ? '' : ' nd'}">${big}</div>
+        <div class="bank-sub">Compra <b>${compra}</b> · Venta <b>${venta}</b>${bcb}</div>
+      </div>`;
+    };
+
+    let p2p = '';
+    if (DATA.p2p && (DATA.p2p.compra || DATA.p2p.venta)) {
+      const v = DATA.p2p[key];
+      p2p = `<div class="bank-row p2p"><div class="bank-name">Binance P2P (referencia)</div>
+        <div class="bank-big">${v ? f2(v) : '—'}${v && usd > 0 ? `<small>${f2(usd * v)} Bs</small>` : ''}</div>
+        <div class="bank-sub">Compra <b>${DATA.p2p.compra ? f2(DATA.p2p.compra) : '—'}</b> · Venta <b>${DATA.p2p.venta ? f2(DATA.p2p.venta) : '—'}</b></div></div>`;
+    }
+
+    document.getElementById('bankList').innerHTML = con.map(card).join('') + p2p + sin.map(card).join('');
+
+    const fuentes = (DATA.errores && DATA.errores.length) ? ' Avisos: ' + DATA.errores.join(' | ') : '';
+    document.getElementById('bankStatus').innerHTML =
+      (mode === 'vender' ? 'Ordenado por el banco que <b>más paga</b> por tus dólares. ' : 'Ordenado por el banco que <b>más barato vende</b>. ') +
+      'Precios publicados por los bancos; la ventanilla o la app pueden variar según monto y ciudad. ' +
+      'Actualizado: ' + hora(DATA.updated_at) + '.' + fuentes;
+  };
+
+  document.getElementById('bankMode').addEventListener('click', e => {
+    const btn = e.target.closest('.range-btn'); if (!btn) return;
+    document.querySelectorAll('#bankMode .range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); mode = btn.dataset.mode; renderBancos();
+  });
+
+  loadBancos();
+})();
 </script>
 </body>
 </html>
