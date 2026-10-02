@@ -1,0 +1,25 @@
+name: Actualizar precios por banco
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # cada 30 min
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bancos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/fetch_bancos.py
+      - name: Commit si hubo cambios
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add state/bancos_state.json
+          git diff --cached --quiet || (git commit -m "bancos: actualizar precios" && git push)
