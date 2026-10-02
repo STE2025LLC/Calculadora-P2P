@@ -1,77 +1,75 @@
 {
-  "updated_at": "2026-10-01T21:14:00.783531+00:00",
+  "updated_at": "2026-10-02T14:02:12.634309+00:00",
   "bcb_fecha_corte": null,
   "p2p": {
-    "compra": 12.042,
-    "venta": 12.074,
-    "actualizado": "2026-10-01T21:00:36+00:00"
+    "compra": 11.965,
+    "venta": 11.996,
+    "actualizado": "2026-10-02T14:00:55.555801+00:00"
   },
   "bancos": [
     {
       "banco": "Unión",
-      "compra": 11.02,
-      "venta": 12.22,
+      "compra": 10.9,
+      "venta": 12.2,
       "fuente": "bancounion.com.bo",
-      "actualizado": "2026-10-01T21:00:00+00:00"
+      "actualizado": "2026-10-02T14:02:11.674171+00:00"
     },
     {
       "banco": "BISA",
-      "compra": 11.3,
-      "venta": 12.3,
+      "compra": 11.2,
+      "venta": 12.2,
       "fuente": "factura.bo",
-      "actualizado": "2026-10-01T21:00:36+00:00"
+      "actualizado": "2026-10-02T14:00:55.555801+00:00"
     },
     {
       "banco": "BNB",
-      "compra": 11.0,
-      "venta": 12.3,
+      "compra": 11.4,
+      "venta": 12.2,
       "fuente": "factura.bo",
-      "actualizado": "2026-10-01T21:00:36+00:00"
+      "actualizado": "2026-10-02T14:00:55.555801+00:00"
     },
     {
       "banco": "BancoSol",
-      "compra": 10.8,
-      "venta": 12.3,
+      "compra": 10.71,
+      "venta": 12.2,
       "fuente": "factura.bo",
-      "actualizado": "2026-10-01T21:00:36+00:00"
+      "actualizado": "2026-10-02T14:00:55.555801+00:00"
     },
     {
       "banco": "Mercantil SC",
-      "compra": 10.75,
-      "venta": 12.3,
+      "compra": 10.65,
+      "venta": 12.2,
       "fuente": "factura.bo",
-      "actualizado": "2026-10-01T21:00:36+00:00"
+      "actualizado": "2026-10-02T14:00:55.555801+00:00"
     },
     {
       "banco": "Ganadero",
       "compra": null,
-      "venta": 12.3,
+      "venta": 12.2,
       "fuente": "factura.bo",
-      "actualizado": "2026-10-01T21:00:36+00:00"
+      "actualizado": "2026-10-02T14:00:55.555801+00:00"
     },
     {
       "banco": "Económico",
-      "compra": 11.4,
-      "venta": 12.35,
+      "compra": 11.3,
+      "venta": 12.25,
       "fuente": "factura.bo",
-      "actualizado": "2026-10-01T21:00:36+00:00"
+      "actualizado": "2026-10-02T14:00:55.555801+00:00"
     },
     {
       "banco": "FIE",
-      "compra": 11.5,
-      "venta": 12.0,
+      "compra": 11.4,
+      "venta": 11.9,
       "fuente": "factura.bo",
-      "actualizado": "2026-10-01T21:00:36+00:00"
+      "actualizado": "2026-10-02T14:00:55.555801+00:00"
     },
     {
       "banco": "Fortaleza",
-      "compra": 11.7,
-      "venta": 12.3,
+      "compra": 11.6,
+      "venta": 12.2,
       "fuente": "factura.bo",
-      "actualizado": "2026-10-01T21:00:36+00:00"
+      "actualizado": "2026-10-02T14:00:55.555801+00:00"
     }
   ],
-  "errores": [
-    "Semilla manual: datos de hoy; el workflow la reemplaza"
-  ]
+  "errores": []
 }
