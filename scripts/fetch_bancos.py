@@ -144,19 +144,40 @@ def fortaleza():
 
 def ganadero():
     """Su portada no tiene «compra» como tal: publica «T. Cambio Oficial» y
-    «Valor Ref. Venta USD». Se usan esos dos y se marca la nota."""
+    «Valor Ref. Venta USD». Se usan esos dos y se marca la nota.
+    Tres intentos, del más preciso al más tolerante."""
+    s = sopa("https://www.bg.com.bo/")
     por_etiqueta = {}
-    for div in sopa("https://www.bg.com.bo/").select("#indicadores div"):
-        if not re.fullmatch(r"\s*" + NUM + r"\s*", txt(div)):
+
+    def numero_en(t):
+        m = re.search(r"(?<!\d)(\d{1,2}[.,]\d{1,5})(?!\d)", t.replace("\xa0", " "))
+        return a_float(m.group(1)) if m else None
+
+    # valores dentro de #indicadores; la etiqueta está en el bloque más cercano
+    # que tenga letras y un solo número
+    for valor in s.select("#indicadores div"):
+        n = numero_en(txt(valor))
+        if n is None or len(re.findall(NUM, txt(valor))) != 1:
             continue
-        # el contenedor más cercano con texto de etiqueta y un solo número
-        for anc in div.parents:
+        for anc in valor.parents:
             t = txt(anc)
             if re.search(r"[a-zA-Z]{3}", t) and len(re.findall(NUM, t)) == 1:
-                por_etiqueta[plano(t)] = a_float(txt(div))
+                por_etiqueta[plano(t)] = n
                 break
-    compra = next(v for k, v in por_etiqueta.items() if "t. cambio oficial" in k)
-    venta = next(v for k, v in por_etiqueta.items() if "valor ref. venta usd" in k)
+    try:
+        compra = next(v for k, v in por_etiqueta.items() if "cambio oficial" in k)
+        venta = next(v for k, v in por_etiqueta.items() if "ref. venta" in k or "ref venta" in k)
+    except StopIteration:
+        # 3) texto plano de toda la portada
+        t = plano(txt(s))
+        m1 = re.search(r"cambio oficial\D{0,15}?" + NUM, t)
+        m2 = re.search(r"ref\.? venta[^0-9]{0,25}?" + NUM, t)
+        if not (m1 and m2):
+            vistos = list(por_etiqueta)[:4]
+            i = t.find("cambio oficial")
+            raise ValueError(f"no encontré «T. Cambio Oficial» / «Valor Ref. Venta». "
+                             f"Etiquetas vistas: {vistos}. Texto cerca: {t[max(0, i-60):i+120] if i >= 0 else 'sin «cambio oficial» en el HTML (¿se carga con JavaScript?)'}")
+        compra, venta = a_float(m1.group(1)), a_float(m2.group(1))
     return {"compra": compra, "venta": venta,
             "nota": "Ganadero publica «T. Cambio Oficial» y «Valor Ref. Venta»; no es una compra/venta propia confirmada."}
 
