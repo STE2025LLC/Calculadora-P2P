@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-10-14T00:53:21.091101+00:00",
+  "updated_at": "2026-10-14T05:50:58.988774+00:00",
   "bcb_fecha_corte": null,
   "p2p": {
-    "compra": 11.833,
-    "venta": 11.869
+    "compra": 11.842,
+    "venta": 11.888
   },
   "bancos": [
     {
@@ -11,87 +11,87 @@
       "compra": 10.2,
       "venta": 12.0,
       "fuente": "bancounion.com.bo",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     },
     {
       "banco": "BCP",
       "compra": 11.2,
       "venta": 12.0,
       "fuente": "bcp.com.bo",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     },
     {
       "banco": "BISA",
       "compra": 11.0,
       "venta": 12.0,
       "fuente": "bisa.com",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     },
     {
       "banco": "BNB",
       "compra": 11.2,
       "venta": 12.0,
       "fuente": "bnb.com.bo",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     },
     {
       "banco": "BancoSol",
       "compra": 10.53,
       "venta": 12.0,
       "fuente": "bancosol.com.bo",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     },
     {
       "banco": "Mercantil SC",
       "compra": 10.6,
       "venta": 12.0,
       "fuente": "bmsc.com.bo",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     },
     {
       "banco": "Ganadero",
       "compra": null,
       "venta": 12.0,
       "fuente": "factura.bo (respaldo)",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     },
     {
       "banco": "Económico",
       "compra": 10.7,
       "venta": 12.05,
       "fuente": "baneco.com.bo",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     },
     {
       "banco": "FIE",
       "compra": 10.8,
       "venta": 11.8,
       "fuente": "bancofie.com.bo",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     },
     {
       "banco": "Fortaleza",
       "compra": 11.4,
       "venta": 12.0,
       "fuente": "bancofortaleza.com.bo",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     },
     {
       "banco": "Pyme de la Comunidad",
       "compra": 11.3,
       "venta": 11.95,
       "fuente": "bco.com.bo",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     },
     {
       "banco": "Nación Argentina",
       "compra": 11.0,
       "venta": 12.0,
       "fuente": "bna.com.bo",
-      "actualizado": "2026-10-14T00:53:21.091101+00:00"
+      "actualizado": "2026-10-14T05:50:58.988774+00:00"
     }
   ],
   "errores": [
-    "Ganadero: ValueError: no encontré «T. Cambio Oficial» / «Valor Ref. Venta». Etiquetas vistas: ['ufv 3,35731 bs.', 't. cambio oficial 11,70 bs.', 'euro 13,05134 bs.', 'ufv 0,01%']. Texto cerca:  trayectoria. conoce mas sobre nosotros. ufv 3,35731 bs. t. cambio oficial 11,70 bs. valor ref. venta usd 12 bs. euro 13,05134 bs. cap 30.09.2026: 13.35% tre: mn 3,70% me 0,34% mv "
+    "Ganadero: ValueError: no encontré «T. Cambio Oficial» / «Valor Ref. Venta». Etiquetas vistas: ['ufv 3,35781 bs.', 't. cambio oficial 11,70 bs.', 'euro 13,10278 bs.', 'ufv 0,01%']. Texto cerca:  trayectoria. conoce mas sobre nosotros. ufv 3,35781 bs. t. cambio oficial 11,70 bs. valor ref. venta usd 12 bs. euro 13,10278 bs. cap 30.09.2026: 13.35% tre: mn 3,70% me 0,34% mv "
   ]
 }
