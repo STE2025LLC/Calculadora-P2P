@@ -1,8 +1,8 @@
 {
-  "updated_at": "2026-10-17T05:54:36.546472+00:00",
+  "updated_at": "2026-10-17T10:11:47.652491+00:00",
   "bcb_fecha_corte": null,
   "p2p": {
-    "compra": 11.796,
+    "compra": 11.79,
     "venta": 11.839
   },
   "bancos": [
@@ -11,86 +11,88 @@
       "compra": 10.18,
       "venta": 11.83,
       "fuente": "bancounion.com.bo",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00"
+      "actualizado": "2026-10-17T10:11:47.652491+00:00"
     },
     {
       "banco": "BCP",
       "compra": 11.19,
       "venta": 11.99,
       "fuente": "bcp.com.bo",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00"
+      "actualizado": "2026-10-17T10:11:47.652491+00:00"
     },
     {
       "banco": "BISA",
       "compra": 10.99,
       "venta": 11.91,
       "fuente": "bisa.com",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00"
+      "actualizado": "2026-10-17T10:11:47.652491+00:00"
     },
     {
       "banco": "BNB",
       "compra": 11.19,
       "venta": 11.99,
       "fuente": "bnb.com.bo",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00"
+      "actualizado": "2026-10-17T10:11:47.652491+00:00"
     },
     {
       "banco": "BancoSol",
       "compra": 10.51,
       "venta": 11.98,
       "fuente": "bancosol.com.bo",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00"
+      "actualizado": "2026-10-17T10:11:47.652491+00:00"
     },
     {
       "banco": "Mercantil SC",
       "compra": 10.59,
       "venta": 11.99,
       "fuente": "bmsc.com.bo",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00"
+      "actualizado": "2026-10-17T10:11:47.652491+00:00"
     },
     {
       "banco": "Ganadero",
       "compra": 11.69,
       "venta": 11.99,
       "fuente": "bg.com.bo",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00",
+      "actualizado": "2026-10-17T10:11:47.652491+00:00",
       "nota": "Ganadero publica «T. Cambio Oficial» y «Valor Ref. Venta»; no es una compra/venta propia confirmada."
     },
     {
       "banco": "Económico",
       "compra": 10.69,
       "venta": 12.04,
-      "fuente": "baneco.com.bo",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00"
+      "fuente": "factura.bo (respaldo)",
+      "actualizado": "2026-10-17T10:11:47.652491+00:00"
     },
     {
       "banco": "FIE",
       "compra": 10.79,
       "venta": 11.79,
       "fuente": "bancofie.com.bo",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00"
+      "actualizado": "2026-10-17T10:11:47.652491+00:00"
     },
     {
       "banco": "Fortaleza",
       "compra": 11.38,
       "venta": 11.98,
       "fuente": "bancofortaleza.com.bo",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00"
+      "actualizado": "2026-10-17T10:11:47.652491+00:00"
     },
     {
       "banco": "Pyme de la Comunidad",
       "compra": 11.29,
       "venta": 11.94,
       "fuente": "bco.com.bo",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00"
+      "actualizado": "2026-10-17T10:11:47.652491+00:00"
     },
     {
       "banco": "Nación Argentina",
       "compra": 10.98,
       "venta": 11.98,
       "fuente": "bna.com.bo",
-      "actualizado": "2026-10-17T05:54:36.546472+00:00"
+      "actualizado": "2026-10-17T10:11:47.652491+00:00"
     }
   ],
-  "errores": []
+  "errores": [
+    "Económico: HTTPError: 503 Server Error: Service Unavailable for url: https://www.baneco.com.bo/"
+  ]
 }
