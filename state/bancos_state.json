@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-10-19T20:22:51.702586+00:00",
+  "updated_at": "2026-10-19T23:52:01.903377+00:00",
   "bcb_fecha_corte": null,
   "p2p": {
-    "compra": 11.814,
-    "venta": 11.84
+    "compra": 11.806,
+    "venta": 11.838
   },
   "bancos": [
     {
@@ -11,50 +11,49 @@
       "compra": 10.19,
       "venta": 11.84,
       "fuente": "bancounion.com.bo",
-      "actualizado": "2026-10-19T20:22:51.702586+00:00"
+      "actualizado": "2026-10-19T23:52:01.903377+00:00"
     },
     {
       "banco": "BCP",
       "compra": 11.19,
       "venta": 11.99,
       "fuente": "bcp.com.bo",
-      "actualizado": "2026-10-19T14:52:29.533092+00:00",
-      "desactualizado": true
+      "actualizado": "2026-10-19T23:52:01.903377+00:00"
     },
     {
       "banco": "BISA",
       "compra": 10.99,
       "venta": 11.9,
       "fuente": "bisa.com",
-      "actualizado": "2026-10-19T20:22:51.702586+00:00"
+      "actualizado": "2026-10-19T23:52:01.903377+00:00"
     },
     {
       "banco": "BNB",
       "compra": 11.19,
       "venta": 11.99,
       "fuente": "bnb.com.bo",
-      "actualizado": "2026-10-19T20:22:51.702586+00:00"
+      "actualizado": "2026-10-19T23:52:01.903377+00:00"
     },
     {
       "banco": "BancoSol",
       "compra": 10.52,
       "venta": 11.99,
       "fuente": "bancosol.com.bo",
-      "actualizado": "2026-10-19T20:22:51.702586+00:00"
+      "actualizado": "2026-10-19T23:52:01.903377+00:00"
     },
     {
       "banco": "Mercantil SC",
       "compra": 10.59,
       "venta": 11.99,
       "fuente": "bmsc.com.bo",
-      "actualizado": "2026-10-19T20:22:51.702586+00:00"
+      "actualizado": "2026-10-19T23:52:01.903377+00:00"
     },
     {
       "banco": "Ganadero",
       "compra": 11.69,
       "venta": 11.99,
       "fuente": "bg.com.bo",
-      "actualizado": "2026-10-19T20:22:51.702586+00:00",
+      "actualizado": "2026-10-19T23:52:01.903377+00:00",
       "nota": "Ganadero publica «T. Cambio Oficial» y «Valor Ref. Venta»; no es una compra/venta propia confirmada."
     },
     {
@@ -62,38 +61,36 @@
       "compra": 10.69,
       "venta": 12.04,
       "fuente": "baneco.com.bo",
-      "actualizado": "2026-10-19T20:22:51.702586+00:00"
+      "actualizado": "2026-10-19T23:52:01.903377+00:00"
     },
     {
       "banco": "FIE",
       "compra": 10.79,
       "venta": 11.79,
       "fuente": "bancofie.com.bo",
-      "actualizado": "2026-10-19T20:22:51.702586+00:00"
+      "actualizado": "2026-10-19T23:52:01.903377+00:00"
     },
     {
       "banco": "Fortaleza",
       "compra": 11.39,
       "venta": 11.99,
       "fuente": "bancofortaleza.com.bo",
-      "actualizado": "2026-10-19T20:22:51.702586+00:00"
+      "actualizado": "2026-10-19T23:52:01.903377+00:00"
     },
     {
       "banco": "Pyme de la Comunidad",
       "compra": 11.29,
       "venta": 11.94,
       "fuente": "bco.com.bo",
-      "actualizado": "2026-10-19T20:22:51.702586+00:00"
+      "actualizado": "2026-10-19T23:52:01.903377+00:00"
     },
     {
       "banco": "Nación Argentina",
       "compra": 10.99,
       "venta": 11.99,
       "fuente": "bna.com.bo",
-      "actualizado": "2026-10-19T20:22:51.702586+00:00"
+      "actualizado": "2026-10-19T23:52:01.903377+00:00"
     }
   ],
-  "errores": [
-    "BCP: ConnectTimeout: HTTPSConnectionPool(host='www.bcp.com.bo', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.bcp.com.bo', port=443) at 0x7fd0f4206c60>, 'Connection to www.bcp.com.bo timed out. (connect timeout=10)'))"
-  ]
+  "errores": []
 }
