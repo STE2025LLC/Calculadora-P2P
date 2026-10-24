@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-10-23T22:54:29.473069+00:00",
+  "updated_at": "2026-10-24T01:22:27.454540+00:00",
   "bcb_fecha_corte": null,
   "p2p": {
-    "compra": 11.971,
-    "venta": 12.008
+    "compra": 11.978,
+    "venta": 12.013
   },
   "bancos": [
     {
@@ -11,49 +11,49 @@
       "compra": 10.34,
       "venta": 12.14,
       "fuente": "bancounion.com.bo",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00"
+      "actualizado": "2026-10-24T01:22:27.454540+00:00"
     },
     {
       "banco": "BCP",
       "compra": 11.34,
       "venta": 12.14,
       "fuente": "bcp.com.bo",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00"
+      "actualizado": "2026-10-24T01:22:27.454540+00:00"
     },
     {
       "banco": "BISA",
       "compra": 11.14,
       "venta": 12.05,
       "fuente": "bisa.com",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00"
+      "actualizado": "2026-10-24T01:22:27.454540+00:00"
     },
     {
       "banco": "BNB",
       "compra": 11.34,
       "venta": 12.14,
       "fuente": "bnb.com.bo",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00"
+      "actualizado": "2026-10-24T01:22:27.454540+00:00"
     },
     {
       "banco": "BancoSol",
       "compra": 10.66,
       "venta": 12.14,
       "fuente": "bancosol.com.bo",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00"
+      "actualizado": "2026-10-24T01:22:27.454540+00:00"
     },
     {
       "banco": "Mercantil SC",
       "compra": 10.74,
       "venta": 12.14,
       "fuente": "bmsc.com.bo",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00"
+      "actualizado": "2026-10-24T01:22:27.454540+00:00"
     },
     {
       "banco": "Ganadero",
       "compra": 11.84,
       "venta": 12.14,
       "fuente": "bg.com.bo",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00",
+      "actualizado": "2026-10-24T01:22:27.454540+00:00",
       "nota": "Ganadero publica «T. Cambio Oficial» y «Valor Ref. Venta»; no es una compra/venta propia confirmada."
     },
     {
@@ -61,35 +61,35 @@
       "compra": 10.84,
       "venta": 12.19,
       "fuente": "baneco.com.bo",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00"
+      "actualizado": "2026-10-24T01:22:27.454540+00:00"
     },
     {
       "banco": "FIE",
       "compra": 10.94,
       "venta": 11.94,
       "fuente": "bancofie.com.bo",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00"
+      "actualizado": "2026-10-24T01:22:27.454540+00:00"
     },
     {
       "banco": "Fortaleza",
       "compra": 11.54,
       "venta": 12.14,
       "fuente": "bancofortaleza.com.bo",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00"
+      "actualizado": "2026-10-24T01:22:27.454540+00:00"
     },
     {
       "banco": "Pyme de la Comunidad",
       "compra": 11.44,
       "venta": 12.09,
       "fuente": "bco.com.bo",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00"
+      "actualizado": "2026-10-24T01:22:27.454540+00:00"
     },
     {
       "banco": "Nación Argentina",
       "compra": 11.14,
       "venta": 12.14,
       "fuente": "bna.com.bo",
-      "actualizado": "2026-10-23T22:54:29.473069+00:00"
+      "actualizado": "2026-10-24T01:22:27.454540+00:00"
     }
   ],
   "errores": []
