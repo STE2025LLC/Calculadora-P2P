@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-10-26T23:59:18.750115+00:00",
+  "updated_at": "2026-10-27T04:49:04.281295+00:00",
   "bcb_fecha_corte": null,
   "p2p": {
-    "compra": 12.021,
-    "venta": 12.048
+    "compra": 12.039,
+    "venta": 12.08
   },
   "bancos": [
     {
@@ -11,42 +11,42 @@
       "compra": 10.38,
       "venta": 12.18,
       "fuente": "bancounion.com.bo",
-      "actualizado": "2026-10-26T23:59:18.750115+00:00"
+      "actualizado": "2026-10-27T04:49:04.281295+00:00"
     },
     {
       "banco": "BCP",
-      "compra": 11.38,
-      "venta": 12.18,
+      "compra": 11.52,
+      "venta": 12.32,
       "fuente": "bcp.com.bo",
-      "actualizado": "2026-10-26T23:59:18.750115+00:00"
+      "actualizado": "2026-10-27T04:49:04.281295+00:00"
     },
     {
       "banco": "BISA",
-      "compra": 11.18,
-      "venta": 12.1,
+      "compra": 11.32,
+      "venta": 12.24,
       "fuente": "bisa.com",
-      "actualizado": "2026-10-26T23:59:18.750115+00:00"
+      "actualizado": "2026-10-27T04:49:04.281295+00:00"
     },
     {
       "banco": "BNB",
-      "compra": 11.38,
-      "venta": 12.18,
+      "compra": 11.52,
+      "venta": 12.32,
       "fuente": "bnb.com.bo",
-      "actualizado": "2026-10-26T23:59:18.750115+00:00"
+      "actualizado": "2026-10-27T04:49:04.281295+00:00"
     },
     {
       "banco": "BancoSol",
       "compra": 10.69,
       "venta": 12.18,
       "fuente": "bancosol.com.bo",
-      "actualizado": "2026-10-26T23:59:18.750115+00:00"
+      "actualizado": "2026-10-27T04:49:04.281295+00:00"
     },
     {
       "banco": "Mercantil SC",
-      "compra": 10.78,
-      "venta": 12.18,
+      "compra": 10.92,
+      "venta": 12.32,
       "fuente": "bmsc.com.bo",
-      "actualizado": "2026-10-26T23:59:18.750115+00:00"
+      "actualizado": "2026-10-27T04:49:04.281295+00:00"
     },
     {
       "banco": "Ganadero",
@@ -54,43 +54,46 @@
       "venta": 12.18,
       "fuente": "bg.com.bo",
       "actualizado": "2026-10-26T23:59:18.750115+00:00",
-      "nota": "Ganadero publica «T. Cambio Oficial» y «Valor Ref. Venta»; no es una compra/venta propia confirmada."
+      "nota": "Ganadero publica «T. Cambio Oficial» y «Valor Ref. Venta»; no es una compra/venta propia confirmada.",
+      "desactualizado": true
     },
     {
       "banco": "Económico",
-      "compra": 10.88,
-      "venta": 12.23,
+      "compra": 11.02,
+      "venta": 12.37,
       "fuente": "baneco.com.bo",
-      "actualizado": "2026-10-26T23:59:18.750115+00:00"
+      "actualizado": "2026-10-27T04:49:04.281295+00:00"
     },
     {
       "banco": "FIE",
-      "compra": 10.98,
-      "venta": 11.98,
+      "compra": 11.12,
+      "venta": 12.12,
       "fuente": "bancofie.com.bo",
-      "actualizado": "2026-10-26T23:59:18.750115+00:00"
+      "actualizado": "2026-10-27T04:49:04.281295+00:00"
     },
     {
       "banco": "Fortaleza",
       "compra": 11.58,
       "venta": 12.18,
       "fuente": "bancofortaleza.com.bo",
-      "actualizado": "2026-10-26T23:59:18.750115+00:00"
+      "actualizado": "2026-10-27T04:49:04.281295+00:00"
     },
     {
       "banco": "Pyme de la Comunidad",
-      "compra": 11.48,
-      "venta": 12.13,
+      "compra": 11.62,
+      "venta": 12.27,
       "fuente": "bco.com.bo",
-      "actualizado": "2026-10-26T23:59:18.750115+00:00"
+      "actualizado": "2026-10-27T04:49:04.281295+00:00"
     },
     {
       "banco": "Nación Argentina",
-      "compra": 11.18,
-      "venta": 12.18,
+      "compra": 11.32,
+      "venta": 12.32,
       "fuente": "bna.com.bo",
-      "actualizado": "2026-10-26T23:59:18.750115+00:00"
+      "actualizado": "2026-10-27T04:49:04.281295+00:00"
     }
   ],
-  "errores": []
+  "errores": [
+    "Ganadero: ValueError: no encontré «T. Cambio Oficial» / «Valor Ref. Venta». Etiquetas vistas: ['ufv 3,36481 bs.', 'valor ref. venta usd 12,32 bs.', 'ufv 0,01%']. Texto cerca:  trayectoria. conoce mas sobre nosotros. ufv 3,36481 bs. t. cambio oficial valor ref. venta usd 12,32 bs. euro cap 30.09.2026: 13.35% tre: mn 3,70% me 0,34% mv 3,35% ufv 0,01% noso"
+  ]
 }
