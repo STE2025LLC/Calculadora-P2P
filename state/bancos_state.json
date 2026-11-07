@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-07T16:44:36.405510+00:00",
+  "updated_at": "2026-11-07T20:40:13.076347+00:00",
   "bcb_fecha_corte": null,
   "p2p": null,
   "bancos": [
@@ -8,49 +8,49 @@
       "compra": 10.31,
       "venta": 12.11,
       "fuente": "bancounion.com.bo",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00"
+      "actualizado": "2026-11-07T20:40:13.076347+00:00"
     },
     {
       "banco": "BCP",
       "compra": 11.31,
       "venta": 12.11,
       "fuente": "bcp.com.bo",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00"
+      "actualizado": "2026-11-07T20:40:13.076347+00:00"
     },
     {
       "banco": "BISA",
       "compra": 11.11,
       "venta": 11.9,
       "fuente": "bisa.com",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00"
+      "actualizado": "2026-11-07T20:40:13.076347+00:00"
     },
     {
       "banco": "BNB",
       "compra": 11.31,
       "venta": 12.11,
       "fuente": "bnb.com.bo",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00"
+      "actualizado": "2026-11-07T20:40:13.076347+00:00"
     },
     {
       "banco": "BancoSol",
       "compra": 10.63,
       "venta": 12.31,
       "fuente": "bancosol.com.bo",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00"
+      "actualizado": "2026-11-07T20:40:13.076347+00:00"
     },
     {
       "banco": "Mercantil SC",
       "compra": 10.71,
       "venta": 12.11,
       "fuente": "bmsc.com.bo",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00"
+      "actualizado": "2026-11-07T20:40:13.076347+00:00"
     },
     {
       "banco": "Ganadero",
       "compra": 11.81,
       "venta": 12.11,
       "fuente": "bg.com.bo",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00",
+      "actualizado": "2026-11-07T20:40:13.076347+00:00",
       "nota": "Ganadero publica «T. Cambio Oficial» y «Valor Ref. Venta»; no es una compra/venta propia confirmada."
     },
     {
@@ -58,38 +58,36 @@
       "compra": 10.81,
       "venta": 12.16,
       "fuente": "baneco.com.bo",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00"
+      "actualizado": "2026-11-07T20:40:13.076347+00:00"
     },
     {
       "banco": "FIE",
       "compra": 10.81,
       "venta": 12.01,
       "fuente": "bancofie.com.bo",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00"
+      "actualizado": "2026-11-07T20:40:13.076347+00:00"
     },
     {
       "banco": "Fortaleza",
       "compra": 11.51,
       "venta": 12.11,
-      "fuente": "factura.bo (respaldo)",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00"
+      "fuente": "bancofortaleza.com.bo",
+      "actualizado": "2026-11-07T20:40:13.076347+00:00"
     },
     {
       "banco": "Pyme de la Comunidad",
       "compra": 11.41,
       "venta": 12.06,
       "fuente": "bco.com.bo",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00"
+      "actualizado": "2026-11-07T20:40:13.076347+00:00"
     },
     {
       "banco": "Nación Argentina",
       "compra": 11.11,
       "venta": 12.11,
       "fuente": "bna.com.bo",
-      "actualizado": "2026-11-07T16:44:36.405510+00:00"
+      "actualizado": "2026-11-07T20:40:13.076347+00:00"
     }
   ],
-  "errores": [
-    "Fortaleza: SSLError: HTTPSConnectionPool(host='www.bancofortaleza.com.bo', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1011)')))"
-  ]
+  "errores": []
 }
